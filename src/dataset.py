@@ -138,7 +138,7 @@ def process_raw_testing_dataset(raw_dataset_directory):
 
 def get_token_dict_from_file():
     with open(token_file, 'rb') as token_pickle:
-        return pickle.load(token_file)
+        return pickle.load(token_pickle)
 
 
 def get_dataset_from_directory(dataset_directory, num_files):
