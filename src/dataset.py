@@ -163,7 +163,7 @@ def train_dataset():
     yield from train_generator
 
 
-def validation_datset():
+def validation_dataset():
     validation_generator = get_dataset_from_directory(validation_directory, num_holdout_chunks)
     yield from validation_generator
 
