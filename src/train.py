@@ -24,7 +24,7 @@ def Validate():
 
 		for node_id, node_obj in conjecture.nodes.items(): # Find and replace unknowns
 			if node_obj not in tokens_to_index.keys(): # UNKOWN token
-				node.token = "UNKOWN"
+				node_obj.token = "UNKOWN"
 
 		conjectures.append(conjecture)
 		statements.append(statement)
@@ -143,7 +143,8 @@ for epoch in range(args.start_epoch, args.epochs):
 
 		batch_number += 1
 
-		if batch_number % 100:
+		# Train after this many batches.
+		if batch_number % 100 == 0:
 			if batch_number > 0:
 				print("Batch Number: %d" %batch_number)
 				val_err = Validate()
