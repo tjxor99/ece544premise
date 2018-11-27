@@ -92,7 +92,7 @@ def process_raw_training_dataset(raw_dataset_directory):
         conjecture_graph, statements = parse_holstep_file(os.path.join(raw_train_directory, filename))
         for token in conjecture_graph.find_all_tokens():
             train_tokens.add(token)
-        if random.random() < holdout_fraction:
+        if random.random() > holdout_fraction:
             for statement in statements:
                 for token in statement[0].find_all_tokens():
                     train_tokens.add(token)
@@ -143,12 +143,31 @@ def get_token_dict_from_file():
         return pickle.load(token_pickle)
 
 
+def shuffle_dataset(dataset_directory, num_files):
+    current_file_num = 0
+    while current_file_num < num_files:
+        with open(os.path.join(dataset_directory, str(current_file_num)), 'r') as current_file:
+            print("Shuffling file {}".format(current_file_num))
+            datapoints = []
+            while True:
+                line1 = current_file.readline()
+                line2 = current_file.readline()
+                line3 = current_file.readline()
+                if len(line1) <= 1:
+                    break
+                datapoint = datapoint_from_file(line1, line2, line3)
+                datapoints.append(datapoint)
+            random.shuffle(datapoints)
+            flush_buffer(os.path.join(dataset_directory, str(current_file_num)), datapoints, append=False)
+            current_file_num += 1
+
+
 def get_dataset_from_directory(dataset_directory, num_files):
     datapoint_num = 0
-    current_file_num = 1
-    while(current_file_num <= num_files):
+    current_file_num = 0
+    while current_file_num < num_files:
         with open(os.path.join(dataset_directory, str(current_file_num)), 'r') as current_file:
-            while(True):
+            while True:
                 line1 = current_file.readline()
                 line2 = current_file.readline()
                 line3 = current_file.readline()
@@ -175,9 +194,16 @@ def test_dataset():
     yield from test_generator
 
 
+def shuffle_all_datasets():
+    shuffle_dataset(train_directory, num_training_chunks)
+    shuffle_dataset(validation_directory, num_holdout_chunks)
+    shuffle_dataset(test_directory, num_testing_chunks)
+
+
 if __name__ == "__main__":
     create_directories()
-    if sys.argv[1]:
+    if len(sys.argv) > 1:
         process_raw_dataset(sys.argv[1])
     else:
         process_raw_dataset(raw_data_directory)
+        shuffle_all_datasets()
