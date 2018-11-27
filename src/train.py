@@ -65,6 +65,7 @@ F = FormulaNet(args.num_steps, args.batch_size)
 opt = torch.optim.RMSprop(F.parameters(), lr = args.lr, alpha = args.weight_decay)
 if cuda: 
 	F.cuda()
+	print("Cuda Enabled!")
 
 
 # Enabling loading
