@@ -481,12 +481,8 @@ class FormulaNet(nn.Module):
             state_one_hot = self.graph_to_one_hot(statement_graph)
 
             # Map one_hot vectors of full graph into dense vectors of full graph
-            conj_dense = torch.stack([self.dense_map(torch.Tensor(node)) for node in conj_one_hot])
-            state_dense = torch.stack([self.dense_map(torch.Tensor(node)) for node in state_one_hot])
-
-            if self.device: # Cuda is enabled
-                conj_dense = conj_dense.to(self.device)
-                state_dense = state_dense.to(self.device)
+            conj_dense = torch.stack([self.dense_map(torch.Tensor(node, device = self.device)) for node in conj_one_hot])
+            state_dense = torch.stack([self.dense_map(torch.Tensor(node, device = self.device)) for node in state_one_hot])
 
 
             # Iterate equations 1 or 2.
