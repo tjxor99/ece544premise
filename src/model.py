@@ -218,9 +218,11 @@ class max_pool_dense_graph(nn.Module):
 
 
 class FormulaNet(nn.Module):
-    def __init__(self, num_steps, inter_graph_batch_size):
+    def __init__(self, num_steps, inter_graph_batch_size, loss):
         super(FormulaNet, self).__init__()
         # Initialize models
+        self.loss = loss
+
         self.dense_map = LinearMap() # maps one_hot -> 256 dimension vector
         self.FP = FPClass()
         self.FI = FIClass()
@@ -230,6 +232,7 @@ class FormulaNet(nn.Module):
         self.FH = FHClass()
         self.Classifier = CondClassifier()
         self.Softmax = nn.Softmax(dim = 1)
+
 
         self.max_pool_dense_graph = max_pool_dense_graph()
 
