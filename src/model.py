@@ -476,10 +476,12 @@ class FormulaNet(nn.Module):
         for i in range(len(conjecture_graphs)): # Iterate over inter-graph-batch.
             conjecture_graph = conjecture_graphs[i]
             statement_graph = statement_graphs[i]
-        # Map graph object to an array of one hot vectors
+
+            # Map graph object to an array of one hot vectors
             conj_one_hot = self.graph_to_one_hot(conjecture_graph)
             state_one_hot = self.graph_to_one_hot(statement_graph)
 
+            print(type(torch.Tensor(conj_one_hot[0], device = self.device)))
             # Map one_hot vectors of full graph into dense vectors of full graph
             conj_dense = torch.stack([self.dense_map(torch.Tensor(node, device = self.device)) for node in conj_one_hot])
             state_dense = torch.stack([self.dense_map(torch.Tensor(node, device = self.device)) for node in state_one_hot])
