@@ -484,6 +484,9 @@ class FormulaNet(nn.Module):
             # self.dense_map(torch.Tensor(conj_one_hot[0], device = self.device))
             node_tens = torch.Tensor(conj_one_hot[0], device = self.device)
             print(node_tens.is_cuda)
+            print(node_tens.cuda())
+
+
             conj_dense = torch.stack([self.dense_map(torch.Tensor(node, device = self.device)) for node in conj_one_hot])
             state_dense = torch.stack([self.dense_map(torch.Tensor(node, device = self.device)) for node in state_one_hot])
 
