@@ -89,12 +89,13 @@ Begin Training
 lr = args.lr
 for epoch in range(args.start_epoch, args.epochs):
 	# I will assume the graphs are shuffled somehow.
-	batch_number = 1
+	batch_index = 0
+	batch_number = 1 # Number of batches iterated.
+	conjecture_graph_batch = []
+	statement_graph_batch = []
+	label_batch = []
 	for datapoint in train_dataset():
-		conjecture_graph_batch = []
-		statement_graph_batch = []
-		label_batch = []
-		for _ in range(args.batch_size):
+		if batch_index != args.batch_size:
 			# Map the graph object into an array of one hot vectors for both conjecture and statement.
 			conjecture_graph = datapoint.conjecture
 			statement_graph = datapoint.statement
@@ -103,6 +104,11 @@ for epoch in range(args.start_epoch, args.epochs):
 			conjecture_graph_batch.append(conjecture_graph)
 			statement_graph_batch.append(statement_graph)
 			label_batch.append(label)
+
+			batch_index += 1
+			continue
+		else:
+			batch_index = 0
 
 		predict_val, prediction = F(conjecture_graph_batch, statement_graph_batch)
 
@@ -118,8 +124,8 @@ for epoch in range(args.start_epoch, args.epochs):
 		curr_loss.backward()
 		opt.step()
 
-		print("Trained batch number ", batch_number)
-		# print("Training Loss: ", curr_loss)
+		print("Trained %d Batches" %batch_number)
+
 		batch_number += 1
 
 	# --------------- End of Epoch --------------- #
