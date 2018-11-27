@@ -233,6 +233,8 @@ class FormulaNet(nn.Module):
         self.Classifier = CondClassifier()
         self.Softmax = nn.Softmax(dim = 1)
 
+        self.dense_map.cuda()
+
 
         self.max_pool_dense_graph = max_pool_dense_graph()
 
