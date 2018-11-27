@@ -239,6 +239,10 @@ class FormulaNet(nn.Module):
         self.num_steps = num_steps
         self.inter_graph_batch_size = inter_graph_batch_size
         self.token_to_index = get_token_dict_from_file()
+
+        self.device = None # CPU Vers
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda")
         # with open(unique_tokens_file) as f: # Dictionary with {unique token: unique index}
         #     self.token_to_index = json.load(f)
 
@@ -486,6 +490,11 @@ class FormulaNet(nn.Module):
             # Map one_hot vectors of full graph into dense vectors of full graph
             conj_dense = torch.stack([self.dense_map(torch.Tensor(node)) for node in conj_one_hot])
             state_dense = torch.stack([self.dense_map(torch.Tensor(node)) for node in state_one_hot])
+
+            if self.device: # Cuda is enabled
+                conj_dense = conj_dense.to(self.device)
+                state_dense = state_dense.to(self.device)
+
 
             # Iterate equations 1 or 2.
             for t in range(self.num_steps):
