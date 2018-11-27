@@ -233,9 +233,6 @@ class FormulaNet(nn.Module):
         self.Classifier = CondClassifier()
         self.Softmax = nn.Softmax(dim = 1)
 
-        self.dense_map.cuda()
-
-
         self.max_pool_dense_graph = max_pool_dense_graph()
 
         self.num_steps = num_steps
@@ -483,8 +480,8 @@ class FormulaNet(nn.Module):
             conj_one_hot = self.graph_to_one_hot(conjecture_graph)
             state_one_hot = self.graph_to_one_hot(statement_graph)
 
-            print(type(torch.Tensor(conj_one_hot[0], device = self.device)))
             # Map one_hot vectors of full graph into dense vectors of full graph
+            self.dense_map(torch.Tensor(conj_one_hot[0], device = self.device))
             conj_dense = torch.stack([self.dense_map(torch.Tensor(node, device = self.device)) for node in conj_one_hot])
             state_dense = torch.stack([self.dense_map(torch.Tensor(node, device = self.device)) for node in state_one_hot])
 
