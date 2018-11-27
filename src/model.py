@@ -218,7 +218,7 @@ class max_pool_dense_graph(nn.Module):
 
 
 class FormulaNet(nn.Module):
-    def __init__(self, num_steps, inter_graph_batch_size, loss):
+    def __init__(self, num_steps, inter_graph_batch_size, loss, device):
         super(FormulaNet, self).__init__()
         # Initialize models
         self.loss = loss
@@ -239,7 +239,7 @@ class FormulaNet(nn.Module):
         self.inter_graph_batch_size = inter_graph_batch_size
         self.token_to_index = get_token_dict_from_file()
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
 
 
     # Given a graph and all the functions, do one update in parallel for all nodes in the graph.
