@@ -116,12 +116,11 @@ for epoch in range(args.start_epoch, args.epochs):
 		curr_loss.backward()
 		opt.step()
 
-		print("Trained over batch number ", batch_number)
-		print("Training Loss: ", curr_loss)
+		print("Trained batch number ", batch_number)
+		# print("Training Loss: ", curr_loss)
+		batch_number += 1
 
-		# break # To test if it is saved well
-
-	# End of Epoch
+	# --------------- End of Epoch --------------- #
 
 	# Costruct new optimizers after each epoch.
 	lr = lr / args.lr_decay
