@@ -106,7 +106,10 @@ for epoch in range(args.start_epoch, args.epochs):
 
 		predict_val, prediction = F(conjecture_graph_batch, statement_graph_batch)
 
-		label_batch_tensor = torch.Tensor(label_batch)
+		if cuda_available:
+			label_batch_tensor = torch.Tensor(label_batch).cuda()
+		else:
+			label_batch_tensor = torch.Tensor(label_batch)
 
 		# Compute loss due to prediction. How to make label_scores just a scalar? argmax?
 		curr_loss = loss(predict_val, label_batch_tensor)
