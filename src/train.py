@@ -55,8 +55,6 @@ print(args)
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(device)
-
 
 # Loss Function
 loss = nn.BCELoss() # Binary Cross-Entropy Loss

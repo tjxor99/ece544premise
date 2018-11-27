@@ -483,7 +483,7 @@ class FormulaNet(nn.Module):
             # Map one_hot vectors of full graph into dense vectors of full graph
             # self.dense_map(torch.Tensor(conj_one_hot[0], device = self.device))
             node_tens = torch.Tensor(conj_one_hot[0], device = self.device)
-            print(node_tens.is_cuda)
+            print(node_tens)
             print(node_tens.cuda())
 
 
