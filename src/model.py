@@ -525,16 +525,16 @@ class FormulaNet(nn.Module):
         return predict_val, predicted_label
 
 
-    def cuda(self):
-        self.loss.cuda()
-        self.dense_map.cuda()
-        self.FP.cuda()
-        self.FI.cuda()
-        self.FO.cuda()
-        self.FL.cuda()
-        self.FR.cuda()
-        self.FH.cuda()
-        self.Classifier.cuda()
+    # def cuda(self):
+    #     self.loss.cuda()
+    #     self.dense_map.cuda()
+    #     self.FP.cuda()
+    #     self.FI.cuda()
+    #     self.FO.cuda()
+    #     self.FL.cuda()
+    #     self.FR.cuda()
+    #     self.FH.cuda()
+    #     self.Classifier.cuda()
 
 # if __name__ == "__main__":
     # graph_to_index_offline()
