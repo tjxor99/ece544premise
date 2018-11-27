@@ -8,20 +8,33 @@ from torch.autograd import Variable
 
 from model import *
 
-from dataset import train_dataset, test_dataset, validation_dataset
+from dataset import train_dataset, test_dataset, validation_dataset, get_token_dict_from_file
+# from test import Validate
 
 # os.makedirs('models', True) # Directory to save / load models
 def Validate():
+	tokens_to_index = get_token_dict_from_file()
 	count = 0
 	conjectures = []
 	statements = []
 	labels = []
 	for datapoint in validation_dataset():
-		conjectures.append(datapoint.conjecture)
-		statements.append(datapoint.statement)
+		conjecture = datapoint.conjecture
+		statement = datapoint.statement
+
+		for node_id, node_obj in conjecture.nodes.items(): # Find and replace unknowns
+			if node_obj not in tokens_to_index.keys(): # UNKOWN token
+				node.token = "UNKOWN"
+
+		conjectures.append(conjecture)
+		statements.append(statement)
 		labels.append(datapoint.label)
 
+
 		count += 1
+
+		if count == 100: # Just validate only over a few.
+			break
 
 	prediction_val, prediction_label  = F(conjectures, statements)
 
@@ -30,6 +43,8 @@ def Validate():
 	print("Fraction of Incorrect Validations: ", err_count / count)
 
 	return err_count / count
+
+
 
 
 parser = argparse.ArgumentParser()
@@ -127,6 +142,12 @@ for epoch in range(args.start_epoch, args.epochs):
 		print("Trained %d Batches" %batch_number)
 
 		batch_number += 1
+
+		if batch_number % 100:
+			if batch_number > 0:
+				print("Batch Number: %d" %batch_number)
+				val_err = Validate()
+				print("Validation Error: %f" %valid)
 
 	# --------------- End of Epoch --------------- #
 
