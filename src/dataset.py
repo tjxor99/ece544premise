@@ -156,6 +156,8 @@ def get_dataset_from_directory(dataset_directory, num_files):
                 yield datapoint
                 datapoint_num += 1
             current_file_num += 1
+            if current_file_num == num_files:
+                break
 
 
 def train_dataset():
