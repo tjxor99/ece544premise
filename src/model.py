@@ -218,7 +218,7 @@ class max_pool_dense_graph(nn.Module):
 
 
 class FormulaNet(nn.Module):
-    def __init__(self, num_steps, inter_graph_batch_size, loss, device):
+    def __init__(self, num_steps, inter_graph_batch_size, loss, cuda_available = False):
         super(FormulaNet, self).__init__()
         # Initialize models
         self.loss = loss
@@ -239,7 +239,7 @@ class FormulaNet(nn.Module):
         self.inter_graph_batch_size = inter_graph_batch_size
         self.token_to_index = get_token_dict_from_file()
 
-        self.device = device
+        self.cuda_available = cuda_available
 
 
     # Given a graph and all the functions, do one update in parallel for all nodes in the graph.
@@ -266,7 +266,11 @@ class FormulaNet(nn.Module):
         treelets = treelet_funct(G)
 
         # dv is determined by the number of summands for FI + summands of FO
-        dv = torch.zeros(len(G.nodes), device = self.device)
+
+        if self.cuda_available:
+            dv = torch.zeros(len(G.nodes)).cuda()
+        else:
+            dv = torch.zeros(len(G.nodes))
 
         # FI: Pass in Full Graph (\forall xv), [(xu, xv) for xu \in parents(xv)]
         in_batch = []
@@ -284,7 +288,10 @@ class FormulaNet(nn.Module):
                 dv[xv_id] += 1
 
         if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
-            in_sum = torch.zeros([len(G.nodes), 256], device = self.device)
+            if self.cuda_available:
+                in_sum = torch.zeros([len(G.nodes), 256]).cuda()
+            else:
+                in_sum = torch.zeros([len(G.nodes), 256])
             for xv_id in G.nodes.items():
                 in_indices[xv_id].append(xv_id)
         else:
@@ -308,7 +315,10 @@ class FormulaNet(nn.Module):
                 dv[xv_id] += 1
 
         if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
-            out_sum = torch.zeros([len(G.nodes), 256], device = self.device)
+            if self.cuda_available:
+                out_sum = torch.zeros([len(G.nodes), 256]).cuda()
+            else:
+                out_sum = torch.zeros([len(G.nodes), 256])
             for xv_id in G.nodes.items():
                 out_indices[xv_id].append(xv_id)
         else:
@@ -318,7 +328,11 @@ class FormulaNet(nn.Module):
         # print("FO Output ", out_sum)
 
         # Treelets!!
-        ev = torch.zeros(len(G.nodes), device = self.device)
+        if self.cuda_available:
+            ev = torch.zeros(len(G.nodes)).cuda()
+        else:
+            ev = torch.zeros(len(G.nodes))
+
 
         # Left Treelet: (xv, xu, xw)
         in_batch = []
@@ -338,7 +352,10 @@ class FormulaNet(nn.Module):
 
         # WHEN LEFT_TREELETS IS EMPTY
         if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
-            left_sum = torch.zeros([len(G.nodes.items()), 256], device = self.device)
+            if self.cuda_available:
+                left_sum = torch.zeros([len(G.nodes), 256]).cuda()
+            else:
+                left_sum = torch.zeros([len(G.nodes), 256])
             for xv_id in G.nodes.keys():
                 left_indices[xv_id].append(xv_id)
         else:
@@ -364,7 +381,10 @@ class FormulaNet(nn.Module):
                 ev[xv_id] += 1
 
         if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
-            head_sum = torch.zeros([len(G.nodes.items()), 256], device = self.device)
+            if self.cuda_available:
+                head_sum = torch.zeros([len(G.nodes), 256]).cuda()
+            else:
+                head_sum = torch.zeros([len(G.nodes), 256])
             for xv_id in G.nodes.keys():
                 head_indices[xv_id].append(xv_id)
         else:
@@ -391,7 +411,10 @@ class FormulaNet(nn.Module):
                 ev[xv_id] += 1
 
         if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
-            right_sum = torch.zeros([len(G.nodes.items()), 256], device = self.device)
+            if self.cuda_available:
+                right_sum = torch.zeros([len(G.nodes), 256]).cuda()
+            else:
+                right_sum = torch.zeros([len(G.nodes), 256])
             for xv_id in G.nodes.keys():
                 right_indices[xv_id].append(xv_id)
         else:
@@ -416,21 +439,33 @@ class FormulaNet(nn.Module):
             temp = new_in_sum + new_out_sum
             if len(temp.shape) != 0:
                 if dv[xv_id] == 0: # xv has 0 degree
-                    in_out_sum.append(torch.zeros(256, device = self.device))
+                    if self.cuda_available:
+                        in_out_sum.append(torch.zeros(256).cuda())
+                    else:
+                        in_out_sum.append(torch.zeros(256))
                 else:
                     in_out_sum.append(temp / dv[xv_id])
             else:
-                in_out_sum.append(torch.zeros(256, device = self.device))
+                if self.cuda_available:
+                    in_out_sum.append(torch.zeros(256).cuda())
+                else:
+                    in_out_sum.append(torch.zeros(256))
 
             # Append treelet_sum only if the number of summands is not zero. Else, append 0's.
             temp = new_left_sum + new_head_sum + new_right_sum
             if len(temp.shape) != 0:
                 if ev[xv_id] == 0:
-                    treelet_sum.append(torch.zeros(256, device = self.device))
+                    if self.cuda_available:
+                        treelet_sum.append(torch.zeros(256).cuda())
+                    else:
+                        treelet_sum.append(torch.zeros(256))
                 else:
                     treelet_sum.append(temp / ev[xv_id])
             else:
-                treelet_sum.append(torch.zeros(256, device = self.device))
+                if self.cuda_available:
+                    treelet_sum.append(torch.zeros(256).cuda())
+                else:
+                    treelet_sum.append(torch.zeros(256))
 
         in_out_sum = torch.stack(in_out_sum, dim = 0)
         treelet_sum = torch.stack(treelet_sum, dim = 0)
@@ -481,11 +516,6 @@ class FormulaNet(nn.Module):
             state_one_hot = self.graph_to_one_hot(statement_graph)
 
             # Map one_hot vectors of full graph into dense vectors of full graph
-            # self.dense_map(torch.Tensor(conj_one_hot[0], device = self.device))
-            node_tens = torch.Tensor(conj_one_hot[0], device = self.device)
-            print(node_tens)
-            print(node_tens.cuda())
-
             if torch.cuda.is_available():
                 conj_dense = torch.stack([self.dense_map(torch.Tensor(node).cuda()) for node in conj_one_hot])
                 state_dense = torch.stack([self.dense_map(torch.Tensor(node).cuda()) for node in state_one_hot])
