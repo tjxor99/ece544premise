@@ -54,16 +54,16 @@ print(args)
 
 
 
-cuda = True if torch.cuda.is_available() else False
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # Loss Function
 loss = nn.BCELoss() # Binary Cross-Entropy Loss
 
 # Define Model. Decide whether to load (first case) or start new (else)
-F = FormulaNet(args.num_steps, args.batch_size, loss)
+F = FormulaNet(args.num_steps, args.batch_size, loss, device)
 opt = torch.optim.RMSprop(F.parameters(), lr = args.lr, alpha = args.weight_decay)
-if cuda: 
+if torch.cuda.is_available(): 
 	F.cuda()
 	print("Cuda Enabled!")
 
