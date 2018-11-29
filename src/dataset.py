@@ -72,7 +72,7 @@ def flush_buffers(buffer_list, directory):
 
 def process_raw_dataset(raw_dataset_directory):
     process_raw_training_dataset(raw_dataset_directory)
-    process_raw_testing_datset(raw_dataset_directory)
+    process_raw_testing_dataset(raw_dataset_directory)
 
 
 def process_raw_training_dataset(raw_dataset_directory):

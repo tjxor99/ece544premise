@@ -24,7 +24,7 @@ def Validate():
 
 		for node_id, node_obj in conjecture.nodes.items(): # Find and replace unknowns
 			if node_obj not in tokens_to_index.keys(): # UNKOWN token
-				node_obj.token = "UNKOWN"
+				node_obj.token = "UNKNOWN"
 
 		conjectures.append(conjecture)
 		statements.append(statement)
@@ -110,7 +110,7 @@ for epoch in range(args.start_epoch, args.epochs):
 	statement_graph_batch = []
 	label_batch = []
 	for datapoint in train_dataset():
-		if batch_index != args.batch_size:
+		if batch_index != args.batch_size: # Collect Batches
 			# Map the graph object into an array of one hot vectors for both conjecture and statement.
 			conjecture_graph = datapoint.conjecture
 			statement_graph = datapoint.statement
@@ -122,8 +122,6 @@ for epoch in range(args.start_epoch, args.epochs):
 
 			batch_index += 1
 			continue
-		else:
-			batch_index = 0
 
 		predict_val, prediction = F(conjecture_graph_batch, statement_graph_batch)
 
@@ -143,12 +141,17 @@ for epoch in range(args.start_epoch, args.epochs):
 
 		batch_number += 1
 
+		batch_index = 0
+		conjecture_graph_batch = []
+		statement_graph_batch = []
+		label_batch = []
+
 		# Train after this many batches.
-		if batch_number % 100 == 0:
+		if batch_number % 10 == 0:
 			if batch_number > 0:
 				print("Batch Number: %d" %batch_number)
 				val_err = Validate()
-				print("Validation Error: %f" %valid)
+				print("Validation Error: %f" %val_err)
 
 	# --------------- End of Epoch --------------- #
 
