@@ -28,6 +28,10 @@ def Validate(num_datapoints):
 
 		prediction_val = F([conjecture], [statement])
 		_, prediction_label = torch.max(prediction_val, dim = 1)
+
+
+		if cuda_available:
+			prediction_label = prediction_label.cpu()
 		prediction_label = prediction_label.numpy()
 
 		if datapoint.label != prediction_label[0]:
@@ -47,8 +51,8 @@ def Validate(num_datapoints):
 MODEL_DIR = os.path.join("saved_model", "models")
 model_file = os.path.join(MODEL_DIR, "model.pt")
 
-loss = nn.BCELoss() # Binary Cross-Entropy Loss
 
+loss = nn.BCEWithLogitsLoss() # Binary Cross-Entropy Loss
 F = FormulaNet(5, loss)
 
 F.load_state_dict(torch.load(model_file, map_location = "cpu"))
