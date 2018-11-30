@@ -218,7 +218,7 @@ class max_pool_dense_graph(nn.Module):
 
 
 class FormulaNet(nn.Module):
-    def __init__(self, num_steps, inter_graph_batch_size, loss, cuda_available = False):
+    def __init__(self, num_steps, loss, cuda_available = False):
         super(FormulaNet, self).__init__()
         # Initialize models
         self.loss = loss
@@ -236,7 +236,6 @@ class FormulaNet(nn.Module):
         self.max_pool_dense_graph = max_pool_dense_graph()
 
         self.num_steps = num_steps
-        self.inter_graph_batch_size = inter_graph_batch_size
         self.token_to_index = get_token_dict_from_file()
 
         self.cuda_available = cuda_available
@@ -546,20 +545,12 @@ class FormulaNet(nn.Module):
         conj_batch = torch.stack(conj_embedding_batch, dim = 0)
         state_batch = torch.stack(state_embedding_batch, dim = 0)
 
-        # print(len(conjecture_graphs))
-        # print(conj_batch.shape)
         # Classify
         prediction = self.Classifier(conj_batch, state_batch)
 
-        # print(prediction.shape)
-
-        # print("Raw Scores: ", prediction)
-        prediction = self.Softmax(prediction) # Map onto [0,1]
-
-        # print("Prediction Scores: ", prediction)
-
-        predict_val, predicted_label = torch.max(prediction, dim = 1) # max_val, argmax val
-        return predict_val, predicted_label
+        return prediction
+        # predict_val, predicted_label = torch.max(prediction, dim = 1) # max_val, argmax val
+        # return predict_val, predicted_label
 
 
     # def cuda(self):
