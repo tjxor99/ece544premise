@@ -49,6 +49,12 @@ def Validate(num_datapoints):
 	return err_count / count
 
 
+def label_to_one_hot(y):
+	# Given index 0 or 1, map into one_hot vector
+	x = np.zeros(2)
+	x[y] = 1
+	return x
+
 
 
 parser = argparse.ArgumentParser()
@@ -76,7 +82,7 @@ cuda_available = torch.cuda.is_available()
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Loss Function
-loss = nn.BCELoss() # Binary Cross-Entropy Loss
+loss = nn.BCEWithLogitsLoss() # Binary Cross-Entropy Loss
 
 # Define Model. Decide whether to load (first case) or start new (else)
 F = FormulaNet(args.num_steps, args.batch_size, loss, cuda_available)
@@ -116,11 +122,11 @@ for epoch in range(args.start_epoch, args.epochs):
 	statement_graph_batch = []
 	label_batch = []
 	for datapoint in train_dataset():
-		if batch_index != args.batch_size: # Collect Batches
+		if batch_index != args.batch_size: # Collect Batches 
 			# Map the graph object into an array of one hot vectors for both conjecture and statement.
 			conjecture_graph = datapoint.conjecture
 			statement_graph = datapoint.statement
-			label = datapoint.label
+			label = label_to_one_hot(datapoint.label)
 
 			conjecture_graph_batch.append(conjecture_graph)
 			statement_graph_batch.append(statement_graph)
@@ -129,7 +135,7 @@ for epoch in range(args.start_epoch, args.epochs):
 			batch_index += 1
 			continue
 
-		predict_val, prediction = F(conjecture_graph_batch, statement_graph_batch)
+		predict_val = F(conjecture_graph_batch, statement_graph_batch)
 
 		if cuda_available:
 			label_batch_tensor = torch.Tensor(label_batch).cuda()
@@ -139,29 +145,13 @@ for epoch in range(args.start_epoch, args.epochs):
 		# Compute loss due to prediction. How to make label_scores just a scalar? argmax?
 		curr_loss = loss(predict_val, label_batch_tensor)
 
-		# print("Predicted Values:")
-		# print(predict_val)
 
-		# print("True Values")
-		# print(label_batch_tensor)
+		print("Loss ")
+		print(curr_loss)
 
-		# print("Loss ")
-		# print(curr_loss)
 		# Backpropogation.
-		# print("Before Training: ")
-		# for name, param in F.named_parameters():
-		# 	if param.requires_grad:
-		# 		print(name, param.data)
-		# 		break
-
 		curr_loss.backward()
 		opt.step()
-
-		# print("After Training: ")
-		# for name, param in F.named_parameters():
-		# 	if param.requires_grad:
-		# 		print(name, param.data)
-		# 		break
 
 		if batch_number % 50 == 0:
 			print("Trained %d Batches" %batch_number)
@@ -198,11 +188,6 @@ for epoch in range(args.start_epoch, args.epochs):
 
 			print("Models and Optimizers Saved.")
 
-		# if batch_number % 10 == 0:
-		# 	if batch_number > 0:
-		# 		print("Batch Number: %d" %batch_number)
-		# 		val_err = Validate(200)
-		# 		print("Validation Error: %f" %val_err)
 
 	# --------------- End of Epoch --------------- #
 

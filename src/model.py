@@ -546,20 +546,12 @@ class FormulaNet(nn.Module):
         conj_batch = torch.stack(conj_embedding_batch, dim = 0)
         state_batch = torch.stack(state_embedding_batch, dim = 0)
 
-        # print(len(conjecture_graphs))
-        # print(conj_batch.shape)
         # Classify
         prediction = self.Classifier(conj_batch, state_batch)
 
-        # print(prediction.shape)
-
-        # print("Raw Scores: ", prediction)
-        prediction = self.Softmax(prediction) # Map onto [0,1]
-
-        # print("Prediction Scores: ", prediction)
-
-        predict_val, predicted_label = torch.max(prediction, dim = 1) # max_val, argmax val
-        return predict_val, predicted_label
+        return prediction
+        # predict_val, predicted_label = torch.max(prediction, dim = 1) # max_val, argmax val
+        # return predict_val, predicted_label
 
 
     # def cuda(self):
