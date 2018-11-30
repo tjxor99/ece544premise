@@ -1,5 +1,7 @@
 import argparse
 import os
+import pdb
+
 
 import numpy as np
 import torch
@@ -12,8 +14,10 @@ from dataset import train_dataset, test_dataset, validation_dataset, get_token_d
 # from test import Validate
 
 # os.makedirs('models', True) # Directory to save / load models
-def Validate():
+def Validate(num_datapoints):
 	tokens_to_index = get_token_dict_from_file()
+
+	err_count = 0
 	count = 0
 	conjectures = []
 	statements = []
@@ -21,25 +25,25 @@ def Validate():
 	for datapoint in validation_dataset():
 		conjecture = datapoint.conjecture
 		statement = datapoint.statement
+		label = datapoint.label
 
 		for node_id, node_obj in conjecture.nodes.items(): # Find and replace unknowns
 			if node_obj not in tokens_to_index.keys(): # UNKOWN token
 				node_obj.token = "UNKNOWN"
 
-		conjectures.append(conjecture)
-		statements.append(statement)
-		labels.append(datapoint.label)
+		prediction_val, prediction_label  = F([conjecture], [statement])
+		prediction_label = prediction_label.numpy()
 
+		print(prediction_label)
+		print(datapoint.label)
+		if datapoint.label != prediction_label[0]:
+			err_count += 1
 
 		count += 1
 
-		if count == 100: # Just validate only over a few.
+		if count == num_datapoints:
 			break
 
-	prediction_val, prediction_label  = F(conjectures, statements)
-
-	prediction_label = prediction_label.numpy()
-	err_count = np.where(prediction_label != labels)[0].size
 	print("Fraction of Incorrect Validations: ", err_count / count)
 
 	return err_count / count
@@ -76,6 +80,8 @@ loss = nn.BCELoss() # Binary Cross-Entropy Loss
 
 # Define Model. Decide whether to load (first case) or start new (else)
 F = FormulaNet(args.num_steps, args.batch_size, loss, cuda_available)
+F.train()
+
 opt = torch.optim.RMSprop(F.parameters(), lr = args.lr, alpha = args.weight_decay)
 if cuda_available: 
 	F.cuda()
@@ -133,11 +139,32 @@ for epoch in range(args.start_epoch, args.epochs):
 		# Compute loss due to prediction. How to make label_scores just a scalar? argmax?
 		curr_loss = loss(predict_val, label_batch_tensor)
 
+		# print("Predicted Values:")
+		# print(predict_val)
+
+		# print("True Values")
+		# print(label_batch_tensor)
+
+		# print("Loss ")
+		# print(curr_loss)
 		# Backpropogation.
+		# print("Before Training: ")
+		# for name, param in F.named_parameters():
+		# 	if param.requires_grad:
+		# 		print(name, param.data)
+		# 		break
+
 		curr_loss.backward()
 		opt.step()
 
-		print("Trained %d Batches" %batch_number)
+		# print("After Training: ")
+		# for name, param in F.named_parameters():
+		# 	if param.requires_grad:
+		# 		print(name, param.data)
+		# 		break
+
+		if batch_number % 50 == 0:
+			print("Trained %d Batches" %batch_number)
 
 		batch_number += 1
 
@@ -147,11 +174,35 @@ for epoch in range(args.start_epoch, args.epochs):
 		label_batch = []
 
 		# Train after this many batches.
-		if batch_number % 10 == 0:
-			if batch_number > 0:
-				print("Batch Number: %d" %batch_number)
-				val_err = Validate()
-				print("Validation Error: %f" %val_err)
+		if (batch_number > 0) and (batch_number % 100 == 0):
+			# Save Model After Each Epoch
+			MODEL_PATH = args.model_path 
+			if MODEL_PATH is None: # If no model path was specified. Write to default model_path in ../model
+				MODEL_DIR = os.path.join("..", "models")
+				if not os.path.exists(MODEL_DIR):
+					os.makedirs(MODEL_DIR)
+				MODEL_PATH = os.path.join(MODEL_DIR, "model.pt")
+
+			torch.save(F.state_dict(), MODEL_PATH)
+
+
+			# Save Optimizer to be used for next epoch.
+			OPT_PATH = args.opt_path
+			if OPT_PATH is None:
+				MODEL_DIR = os.path.join("..", "models")
+				if not os.path.exists(MODEL_DIR):
+					os.makedirs(MODEL_DIR)
+				OPT_PATH = os.path.join(MODEL_DIR, "opt.pt")
+
+			torch.save(opt.state_dict(), OPT_PATH)
+
+			print("Models and Optimizers Saved.")
+
+		# if batch_number % 10 == 0:
+		# 	if batch_number > 0:
+		# 		print("Batch Number: %d" %batch_number)
+		# 		val_err = Validate(200)
+		# 		print("Validation Error: %f" %val_err)
 
 	# --------------- End of Epoch --------------- #
 
@@ -159,7 +210,9 @@ for epoch in range(args.start_epoch, args.epochs):
 	lr = lr / args.lr_decay
 	opt = torch.optim.RMSprop(F.parameters(), lr = lr, alpha = args.weight_decay)
 
+	print("----------------------------------------------------")
 	print("Epoch # "+str(epoch + 1)+" done.")
+	print("----------------------------------------------------")
 	
 
 	# Save Model After Each Epoch
@@ -188,6 +241,6 @@ for epoch in range(args.start_epoch, args.epochs):
 
 
 	# Validate Model after Each Epoch
-	val_err = Validate()
+	val_err = Validate(500)
 	print("Validation Error: "+str(val_err))
 
