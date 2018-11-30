@@ -135,6 +135,7 @@ for epoch in range(args.start_epoch, args.epochs):
 
 		if (batch_number > 0) and (batch_number % 50 == 0):
 			print("Trained %d Batches" %batch_number)
+			print("Train Loss", curr_loss)
 
 		batch_number += 1
 
