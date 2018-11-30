@@ -121,6 +121,8 @@ for epoch in range(args.start_epoch, args.epochs):
 			batch_index += 1
 			continue
 
+# From HERE: CHECK TO SEE IF IT OVERFITS WITH A SINGLE BATCH REPEATELDY FED IN by uncommenting while and print
+	# while (1): # DELETE
 		predict_val = F(conjecture_graph_batch, statement_graph_batch)
 
 		if cuda_available:
@@ -130,10 +132,12 @@ for epoch in range(args.start_epoch, args.epochs):
 
 		# Compute loss due to prediction. How to make label_scores just a scalar? argmax?
 		curr_loss = loss(predict_val, label_batch_tensor)
+		# print(curr_loss) # DELETE
 
 		# Backpropogation.
 		curr_loss.backward()
 		opt.step()
+# To Here
 
 		batch_index = 0
 		conjecture_graph_batch = []
@@ -144,6 +148,7 @@ for epoch in range(args.start_epoch, args.epochs):
 
 		if batch_number % 50 == 0:
 			print("Trained %d Batches" %batch_number)
+			print("Train Error: ", curr_loss)
 
 		# Train after this many batches.
 		if (batch_number > 0) and (batch_number % 100 == 0):
@@ -170,11 +175,11 @@ for epoch in range(args.start_epoch, args.epochs):
 
 			print("Models and Optimizers Saved.")
 
-		if (batch_number > 0) and (batch_number % 200 == 0):
-			F.eval()
-			val = Validate(200)
-			print("Validation Error ", val)
-			F.train()
+		# if (batch_number > 0) and (batch_number % 200 == 0):
+		# 	F.eval()
+		# 	val = Validate(200)
+		# 	print("Validation Error ", val)
+		# 	F.train()
 
 	# --------------- End of Epoch --------------- #
 
@@ -215,6 +220,8 @@ for epoch in range(args.start_epoch, args.epochs):
 
 
 	# Validate Model after Each Epoch
-	val_err = Validate(500)
+	F.eval()
+	val_err = Validate(2000)
+	F.train()
 	print("Validation Error: "+str(val_err))
 

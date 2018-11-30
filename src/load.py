@@ -51,8 +51,8 @@ def Validate(num_datapoints):
 MODEL_DIR = os.path.join("saved_model", "models")
 model_file = os.path.join(MODEL_DIR, "model.pt")
 
-loss = nn.BCELoss() # Binary Cross-Entropy Loss
 
+loss = nn.BCEWithLogitsLoss() # Binary Cross-Entropy Loss
 F = FormulaNet(5, loss)
 
 F.load_state_dict(torch.load(model_file, map_location = "cpu"))
