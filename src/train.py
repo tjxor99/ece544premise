@@ -19,9 +19,6 @@ def Validate(num_datapoints):
 
 	err_count = 0
 	count = 0
-	conjectures = []
-	statements = []
-	labels = []
 	for datapoint in validation_dataset():
 		conjecture = datapoint.conjecture
 		statement = datapoint.statement
@@ -107,109 +104,112 @@ for epoch in range(args.start_epoch, args.epochs):
 	conjecture_graph_batch = []
 	statement_graph_batch = []
 	label_batch = []
+
 	for datapoint in train_dataset():
-		if batch_index != args.batch_size: # Collect Batches 
-			# Map the graph object into an array of one hot vectors for both conjecture and statement.
-			conjecture_graph = datapoint.conjecture
-			statement_graph = datapoint.statement
-			label = label_to_one_hot(datapoint.label)
+		conjecture_graph = datapoint.conjecture
+		statement_graph = datapoint.statement
+		label = label_to_one_hot(datapoint.label)
 
-			conjecture_graph_batch.append(conjecture_graph)
-			statement_graph_batch.append(statement_graph)
-			label_batch.append(label)
+		conjecture_graph_batch.append(conjecture_graph)
+		statement_graph_batch.append(statement_graph)
+		label_batch.append(label)
 
+		if batch_index < args.batch_size:
 			batch_index += 1
-			continue
 
-# From HERE: CHECK TO SEE IF IT OVERFITS WITH A SINGLE BATCH REPEATELDY FED IN by uncommenting while and print
-	# while (1): # DELETE
-		predict_val = F(conjecture_graph_batch, statement_graph_batch)
-
-		if cuda_available:
-			label_batch_tensor = torch.Tensor(label_batch).cuda()
+		# Start Training! Skip if batch size is 1 or les.
 		else:
-			label_batch_tensor = torch.Tensor(label_batch)
+			# Forward
+			predict_val = F(conjecture_graph_batch, statement_graph_batch)
 
-		# Compute loss due to prediction. How to make label_scores just a scalar? argmax?
-		curr_loss = loss(predict_val, label_batch_tensor)
-		# print(curr_loss) # DELETE
+			if cuda_available:
+				label_batch_tensor = torch.Tensor(label_batch).cuda()
+			else:
+				label_batch_tensor = torch.Tensor(label_batch)
 
-		# Backpropogation.
-		curr_loss.backward()
-		opt.step()
-# To Here
+			# Compute loss due to prediction. How to make label_scores just a scalar? argmax?
+			curr_loss = loss(predict_val, label_batch_tensor)
 
-		if (batch_number > 0) and (batch_number % 50 == 0):
-			print("Trained %d Batches" %batch_number)
-			print("Train Loss", curr_loss)
+			# Backpropogation.
+			curr_loss.backward()
+			opt.step()
 
-		batch_number += 1
+			batch_number += 1
 
-		batch_index = 0
-		conjecture_graph_batch = []
-		statement_graph_batch = []
-		label_batch = []
+			batch_index = 0
+			conjecture_graph_batch = []
+			statement_graph_batch = []
+			label_batch = []
+
+			if (batch_number > 0) and (batch_number % 50 == 0):
+				print("Trained %d Batches" %batch_number)
+				print("Train Loss", curr_loss)
 		
-		if (batch_number > 0) and (batch_number % 100 == 0):
-			# Save Model every 100 batches.
-			MODEL_PATH = args.model_path 
-			if MODEL_PATH is None: # If no model path was specified. Write to default model_path in ../model
-				MODEL_DIR = os.path.join("..", "models")
-				if not os.path.exists(MODEL_DIR):
-					os.makedirs(MODEL_DIR)
-				MODEL_PATH = os.path.join(MODEL_DIR, "model.pt")
+			if (batch_number > 0) and (batch_number % 100 == 0):
+				# Save Model every 100 batches.
+				MODEL_PATH = args.model_path 
+				if MODEL_PATH is None: # If no model path was specified. Write to default model_path in ../model
+					MODEL_DIR = os.path.join("..", "models")
+					if not os.path.exists(MODEL_DIR):
+						os.makedirs(MODEL_DIR)
+					MODEL_PATH = os.path.join(MODEL_DIR, "model.pt")
 
-			torch.save(F.state_dict(), MODEL_PATH)
-
-
-			# Save Optimizer to be used for next epoch.
-			OPT_PATH = args.opt_path
-			if OPT_PATH is None:
-				MODEL_DIR = os.path.join("..", "models")
-				if not os.path.exists(MODEL_DIR):
-					os.makedirs(MODEL_DIR)
-				OPT_PATH = os.path.join(MODEL_DIR, "opt.pt")
-
-			torch.save(opt.state_dict(), OPT_PATH)
-
-			print("Models and Optimizers Saved.")
-
-		batch_number += 1
-
-		if batch_number % 50 == 0:
-			print("Trained %d Batches" %batch_number)
-			print("Train Error: ", curr_loss)
-
-		# Train after this many batches.
-		if (batch_number > 0) and (batch_number % 100 == 0):
-			# Save Model After Each Epoch
-			MODEL_PATH = args.model_path 
-			if MODEL_PATH is None: # If no model path was specified. Write to default model_path in ../model
-				MODEL_DIR = os.path.join("..", "models")
-				if not os.path.exists(MODEL_DIR):
-					os.makedirs(MODEL_DIR)
-				MODEL_PATH = os.path.join(MODEL_DIR, "model.pt")
-
-			torch.save(F.state_dict(), MODEL_PATH)
+				torch.save(F.state_dict(), MODEL_PATH)
 
 
-			# Save Optimizer to be used for next epoch.
-			OPT_PATH = args.opt_path
-			if OPT_PATH is None:
-				MODEL_DIR = os.path.join("..", "models")
-				if not os.path.exists(MODEL_DIR):
-					os.makedirs(MODEL_DIR)
-				OPT_PATH = os.path.join(MODEL_DIR, "opt.pt")
+				# Save Optimizer to be used for next epoch.
+				OPT_PATH = args.opt_path
+				if OPT_PATH is None:
+					MODEL_DIR = os.path.join("..", "models")
+					if not os.path.exists(MODEL_DIR):
+						os.makedirs(MODEL_DIR)
+					OPT_PATH = os.path.join(MODEL_DIR, "opt.pt")
 
-			torch.save(opt.state_dict(), OPT_PATH)
+				torch.save(opt.state_dict(), OPT_PATH)
 
-			print("Models and Optimizers Saved.")
+				print("Models and Optimizers Saved.")
+				# Reset batch
+				conjecture_graph_batch = []
+				statement_graph_batch = []
+				label_batch = []
 
-		# if (batch_number > 0) and (batch_number % 200 == 0):
-		# 	F.eval()
-		# 	val = Validate(200)
-		# 	print("Validation Error ", val)
-		# 	F.train()
+				batch_index = 0
+				batch_number += 1
+
+				if batch_number % 50 == 0:
+					print("Trained %d Batches" %batch_number)
+					print("Train Error: ", curr_loss)
+
+				# Save after this many batches.
+				if (batch_number > 0) and (batch_number % 100 == 0):
+					# Save Model After Each Epoch
+					MODEL_PATH = args.model_path 
+					if MODEL_PATH is None: # If no model path was specified. Write to default model_path in ../model
+						MODEL_DIR = os.path.join("..", "models")
+						if not os.path.exists(MODEL_DIR):
+							os.makedirs(MODEL_DIR)
+						MODEL_PATH = os.path.join(MODEL_DIR, "model.pt")
+
+					torch.save(F.state_dict(), MODEL_PATH)
+
+
+					# Save Optimizer to be used for next epoch.
+					OPT_PATH = args.opt_path
+					if OPT_PATH is None:
+						MODEL_DIR = os.path.join("..", "models")
+						if not os.path.exists(MODEL_DIR):
+							os.makedirs(MODEL_DIR)
+						OPT_PATH = os.path.join(MODEL_DIR, "opt.pt")
+
+					torch.save(opt.state_dict(), OPT_PATH)
+
+					print("Models and Optimizers Saved.")
+
+			# if (batch_number > 0) and (batch_number % 200 == 0):
+			# 	F.eval()
+			# 	val = Validate(200)
+			# 	print("Validation Error ", val)
+			# 	F.train()
 
 	# --------------- End of Epoch --------------- #
 
