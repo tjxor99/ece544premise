@@ -55,7 +55,7 @@ model_file = os.path.join(MODEL_DIR, "model.pt")
 
 loss = nn.BCELoss() # Binary Cross-Entropy Loss
 
-F = FormulaNet(5, 32, loss)
+F = FormulaNet(5, loss)
 
 F.load_state_dict(torch.load(model_file, map_location = "cpu"))
 F.eval()

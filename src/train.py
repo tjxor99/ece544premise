@@ -85,7 +85,7 @@ cuda_available = torch.cuda.is_available()
 loss = nn.BCEWithLogitsLoss() # Binary Cross-Entropy Loss
 
 # Define Model. Decide whether to load (first case) or start new (else)
-F = FormulaNet(args.num_steps, args.batch_size, loss, cuda_available)
+F = FormulaNet(args.num_steps, loss, cuda_available)
 F.train()
 
 opt = torch.optim.RMSprop(F.parameters(), lr = args.lr, alpha = args.weight_decay)
@@ -145,10 +145,6 @@ for epoch in range(args.start_epoch, args.epochs):
 		# Compute loss due to prediction. How to make label_scores just a scalar? argmax?
 		curr_loss = loss(predict_val, label_batch_tensor)
 
-
-		print("Loss ")
-		print(curr_loss)
-
 		# Backpropogation.
 		curr_loss.backward()
 		opt.step()
@@ -188,6 +184,8 @@ for epoch in range(args.start_epoch, args.epochs):
 
 			print("Models and Optimizers Saved.")
 
+		if (batch_number > 0) and (batch_number % 200 == 0):
+			Validate(200)
 
 	# --------------- End of Epoch --------------- #
 
@@ -196,7 +194,9 @@ for epoch in range(args.start_epoch, args.epochs):
 	opt = torch.optim.RMSprop(F.parameters(), lr = lr, alpha = args.weight_decay)
 
 	print("----------------------------------------------------")
+	print("----------------------------------------------------")
 	print("Epoch # "+str(epoch + 1)+" done.")
+	print("----------------------------------------------------")
 	print("----------------------------------------------------")
 	
 
