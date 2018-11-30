@@ -26,16 +26,10 @@ def Validate(num_datapoints):
 			if node_obj not in tokens_to_index.keys(): # UNKOWN token
 				node_obj.token = "UNKNOWN"
 
-		# conjectures.append(conjecture)
-		# statements.append(statement)
-		# labels.append(datapoint.label)
-
-
-		prediction_val, prediction_label  = F([conjecture], [statement])
+		prediction_val = F([conjecture], [statement])
+		_, prediction_label = torch.max(prediction_val, dim = 1)
 		prediction_label = prediction_label.numpy()
 
-		print(prediction_label)
-		print(datapoint.label)
 		if datapoint.label != prediction_label[0]:
 			err_count += 1
 

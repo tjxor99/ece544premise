@@ -32,7 +32,7 @@ def Validate(num_datapoints):
 				node_obj.token = "UNKNOWN"
 
 		prediction_val = F([conjecture], [statement])
-		_, prediction_label = torch.max(prediction_val)
+		_, prediction_label = torch.max(prediction_val, dim = 1)
 		prediction_label = prediction_label.numpy()
 
 		if datapoint.label != prediction_label[0]:
@@ -197,7 +197,8 @@ for epoch in range(args.start_epoch, args.epochs):
 
 			print("Models and Optimizers Saved.")
 
-		if (batch_number > 0) and (batch_number % 200 == 0):
+		# if (batch_number > 0) and (batch_number % 200 == 0):
+		if batch_number == 1:
 			F.eval()
 			val = Validate(200)
 			print("Validation Error ", val)
