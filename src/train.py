@@ -31,11 +31,10 @@ def Validate(num_datapoints):
 			if node_obj not in tokens_to_index.keys(): # UNKOWN token
 				node_obj.token = "UNKNOWN"
 
-		prediction_val, prediction_label  = F([conjecture], [statement])
+		prediction_val = F([conjecture], [statement])
+		_, prediction_label = torch.max(prediction_val)
 		prediction_label = prediction_label.numpy()
 
-		print(prediction_label)
-		print(datapoint.label)
 		if datapoint.label != prediction_label[0]:
 			err_count += 1
 
@@ -200,7 +199,8 @@ for epoch in range(args.start_epoch, args.epochs):
 
 		if (batch_number > 0) and (batch_number % 200 == 0):
 			F.eval()
-			Validate(200)
+			val = Validate(200)
+			print("Validation Error ", val)
 			F.train()
 
 	# --------------- End of Epoch --------------- #
