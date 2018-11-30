@@ -197,8 +197,7 @@ for epoch in range(args.start_epoch, args.epochs):
 
 			print("Models and Optimizers Saved.")
 
-		# if (batch_number > 0) and (batch_number % 200 == 0):
-		if batch_number == 1:
+		if (batch_number > 0) and (batch_number % 200 == 0):
 			F.eval()
 			val = Validate(200)
 			print("Validation Error ", val)
