@@ -101,7 +101,7 @@ lr = args.lr
 for epoch in range(args.start_epoch, args.epochs):
 	# I will assume the graphs are shuffled somehow.
 	batch_index = 0
-	batch_number = 1 # Number of batches iterated.
+	batch_number = 0 # Number of batches iterated.
 	conjecture_graph_batch = []
 	statement_graph_batch = []
 	label_batch = []
@@ -143,7 +143,6 @@ for epoch in range(args.start_epoch, args.epochs):
 		conjecture_graph_batch = []
 		statement_graph_batch = []
 		label_batch = []
-
 		
 		if (batch_number > 0) and (batch_number % 100 == 0):
 			# Save Model every 100 batches.
@@ -169,6 +168,13 @@ for epoch in range(args.start_epoch, args.epochs):
 
 			print("Models and Optimizers Saved.")
 
+		batch_number += 1
+
+		if batch_number % 50 == 0:
+			print("Trained %d Batches" %batch_number)
+
+		# Train after this many batches.
+>>>>>>> e4cfe2171b39b51278a6d339bed7b35bb3eeed1d
 		if (batch_number > 0) and (batch_number % 100 == 0):
 			# Save Model After Each Epoch
 			MODEL_PATH = args.model_path 
@@ -194,7 +200,9 @@ for epoch in range(args.start_epoch, args.epochs):
 			print("Models and Optimizers Saved.")
 
 		if (batch_number > 0) and (batch_number % 200 == 0):
+			F.eval()
 			Validate(200)
+			F.train()
 
 	# --------------- End of Epoch --------------- #
 
