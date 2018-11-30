@@ -115,64 +115,61 @@ for epoch in range(args.start_epoch, args.epochs):
 		label_batch.append(label)
 
 		if batch_index < args.batch_size:
-			continue
+			batch_index += 1
 
 		# Start Training! Skip if batch size is 1 or les.
-		if len(label) <= 1:
-			break
-
-	# From HERE: CHECK TO SEE IF IT OVERFITS WITH A SINGLE BATCH REPEATELDY FED IN by uncommenting while and print
-		# while (1): # DELETE
-		predict_val = F(conjecture_graph_batch, statement_graph_batch)
-
-		if cuda_available:
-			label_batch_tensor = torch.Tensor(label_batch).cuda()
 		else:
-			label_batch_tensor = torch.Tensor(label_batch)
+			# Forward
+			predict_val = F(conjecture_graph_batch, statement_graph_batch)
 
-		# Compute loss due to prediction. How to make label_scores just a scalar? argmax?
-		curr_loss = loss(predict_val, label_batch_tensor)
-		# print(curr_loss) # DELETE
+			if cuda_available:
+				label_batch_tensor = torch.Tensor(label_batch).cuda()
+			else:
+				label_batch_tensor = torch.Tensor(label_batch)
 
-		# Backpropogation.
-		curr_loss.backward()
-		opt.step()
-# To Here
+			# Compute loss due to prediction. How to make label_scores just a scalar? argmax?
+			curr_loss = loss(predict_val, label_batch_tensor)
 
-		conjecture_graph_batch = []
-		statement_graph_batch = []
-		label_batch = []
+			# Backpropogation.
+			curr_loss.backward()
+			opt.step()
 
-		batch_number += 1
+			# Reset batch
+			conjecture_graph_batch = []
+			statement_graph_batch = []
+			label_batch = []
 
-		if batch_number % 50 == 0:
-			print("Trained %d Batches" %batch_number)
-			print("Train Error: ", curr_loss)
+			batch_index = 0
+			batch_number += 1
 
-		# Save after this many batches.
-		if (batch_number > 0) and (batch_number % 100 == 0):
-			# Save Model After Each Epoch
-			MODEL_PATH = args.model_path 
-			if MODEL_PATH is None: # If no model path was specified. Write to default model_path in ../model
-				MODEL_DIR = os.path.join("..", "models")
-				if not os.path.exists(MODEL_DIR):
-					os.makedirs(MODEL_DIR)
-				MODEL_PATH = os.path.join(MODEL_DIR, "model.pt")
+			if batch_number % 50 == 0:
+				print("Trained %d Batches" %batch_number)
+				print("Train Error: ", curr_loss)
 
-			torch.save(F.state_dict(), MODEL_PATH)
+			# Save after this many batches.
+			if (batch_number > 0) and (batch_number % 100 == 0):
+				# Save Model After Each Epoch
+				MODEL_PATH = args.model_path 
+				if MODEL_PATH is None: # If no model path was specified. Write to default model_path in ../model
+					MODEL_DIR = os.path.join("..", "models")
+					if not os.path.exists(MODEL_DIR):
+						os.makedirs(MODEL_DIR)
+					MODEL_PATH = os.path.join(MODEL_DIR, "model.pt")
+
+				torch.save(F.state_dict(), MODEL_PATH)
 
 
-			# Save Optimizer to be used for next epoch.
-			OPT_PATH = args.opt_path
-			if OPT_PATH is None:
-				MODEL_DIR = os.path.join("..", "models")
-				if not os.path.exists(MODEL_DIR):
-					os.makedirs(MODEL_DIR)
-				OPT_PATH = os.path.join(MODEL_DIR, "opt.pt")
+				# Save Optimizer to be used for next epoch.
+				OPT_PATH = args.opt_path
+				if OPT_PATH is None:
+					MODEL_DIR = os.path.join("..", "models")
+					if not os.path.exists(MODEL_DIR):
+						os.makedirs(MODEL_DIR)
+					OPT_PATH = os.path.join(MODEL_DIR, "opt.pt")
 
-			torch.save(opt.state_dict(), OPT_PATH)
+				torch.save(opt.state_dict(), OPT_PATH)
 
-			print("Models and Optimizers Saved.")
+				print("Models and Optimizers Saved.")
 
 		# if (batch_number > 0) and (batch_number % 200 == 0):
 		# 	F.eval()
