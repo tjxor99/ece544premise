@@ -176,10 +176,6 @@ for epoch in range(args.start_epoch, args.epochs):
 				batch_index = 0
 				batch_number += 1
 
-				if batch_number % 50 == 0:
-					print("Trained %d Batches" %batch_number)
-					print("Train Error: ", curr_loss)
-
 				# Save after this many batches.
 				if (batch_number > 0) and (batch_number % 100 == 0):
 					# Save Model After Each Epoch
