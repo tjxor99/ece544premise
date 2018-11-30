@@ -174,7 +174,6 @@ for epoch in range(args.start_epoch, args.epochs):
 			print("Trained %d Batches" %batch_number)
 
 		# Train after this many batches.
->>>>>>> e4cfe2171b39b51278a6d339bed7b35bb3eeed1d
 		if (batch_number > 0) and (batch_number % 100 == 0):
 			# Save Model After Each Epoch
 			MODEL_PATH = args.model_path 
