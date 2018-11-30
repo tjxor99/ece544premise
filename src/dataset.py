@@ -4,7 +4,9 @@ import random
 import pickle
 from holstep import *
 
-data_directory = os.path.join("..", "data")
+# data_directory = os.path.join("..", "data")
+data_directory = os.path.join(".", "data")
+
 test_directory = os.path.join(data_directory, "test")
 train_directory = os.path.join(data_directory, "train")
 validation_directory = os.path.join(data_directory, "validation")

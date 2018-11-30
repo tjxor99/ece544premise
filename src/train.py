@@ -119,6 +119,9 @@ for epoch in range(args.start_epoch, args.epochs):
 
 		# Start Training! Skip if batch size is 1 or les.
 		else:
+			if len(label_batch) <= 1:
+				break
+				
 			# Forward
 			predict_val = F(conjecture_graph_batch, statement_graph_batch)
 
