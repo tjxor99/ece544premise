@@ -31,11 +31,10 @@ def Validate(num_datapoints):
 			if node_obj not in tokens_to_index.keys(): # UNKOWN token
 				node_obj.token = "UNKNOWN"
 
-		prediction_val, prediction_label  = F([conjecture], [statement])
+		prediction_val = F([conjecture], [statement])
+		_, prediction_label = torch.max(prediction_val)
 		prediction_label = prediction_label.numpy()
 
-		print(prediction_label)
-		print(datapoint.label)
 		if datapoint.label != prediction_label[0]:
 			err_count += 1
 
@@ -93,22 +92,6 @@ if cuda_available:
 	F.cuda()
 	print("Cuda Enabled!")
 
-
-# Enabling loading
-# if args.load_model is True: # Load Model
-# 	if args.model_path is None:
-# 		raise ValueError('Specify Model Path')
-# 	if args.opt_path is None:
-# 		raise ValueError('Specify Optimizer Path')
-
-# 	F = F.load_state_dict(torch.load(args.model_path))
-# 	opt = opt.load_state_dict(torch.load(args.opt_path))
-
-# else: # New Model
-# 	# Enable GPU if available.
-# 	if cuda: 
-# 		F.cuda()
-# 	# Optimizers
 
 """ 
 Begin Training
@@ -186,7 +169,8 @@ for epoch in range(args.start_epoch, args.epochs):
 
 		if (batch_number > 0) and (batch_number % 200 == 0):
 			F.eval()
-			Validate(200)
+			val = Validate(200)
+			print("Validation Error ", val)
 			F.train()
 
 	# --------------- End of Epoch --------------- #
