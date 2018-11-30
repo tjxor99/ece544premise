@@ -137,21 +137,19 @@ for epoch in range(args.start_epoch, args.epochs):
 			curr_loss.backward()
 			opt.step()
 
-			# Reset batch
+			batch_number += 1
+
+			batch_index = 0
 			conjecture_graph_batch = []
 			statement_graph_batch = []
 			label_batch = []
 
-			batch_index = 0
-			batch_number += 1
-
-			if batch_number % 50 == 0:
+			if (batch_number > 0) and (batch_number % 50 == 0):
 				print("Trained %d Batches" %batch_number)
-				print("Train Error: ", curr_loss)
-
-			# Save after this many batches.
+				print("Train Loss", curr_loss)
+		
 			if (batch_number > 0) and (batch_number % 100 == 0):
-				# Save Model After Each Epoch
+				# Save Model every 100 batches.
 				MODEL_PATH = args.model_path 
 				if MODEL_PATH is None: # If no model path was specified. Write to default model_path in ../model
 					MODEL_DIR = os.path.join("..", "models")
@@ -173,12 +171,44 @@ for epoch in range(args.start_epoch, args.epochs):
 				torch.save(opt.state_dict(), OPT_PATH)
 
 				print("Models and Optimizers Saved.")
+				# Reset batch
+				conjecture_graph_batch = []
+				statement_graph_batch = []
+				label_batch = []
 
-		# if (batch_number > 0) and (batch_number % 200 == 0):
-		# 	F.eval()
-		# 	val = Validate(200)
-		# 	print("Validation Error ", val)
-		# 	F.train()
+				batch_index = 0
+				batch_number += 1
+
+				# Save after this many batches.
+				if (batch_number > 0) and (batch_number % 100 == 0):
+					# Save Model After Each Epoch
+					MODEL_PATH = args.model_path 
+					if MODEL_PATH is None: # If no model path was specified. Write to default model_path in ../model
+						MODEL_DIR = os.path.join("..", "models")
+						if not os.path.exists(MODEL_DIR):
+							os.makedirs(MODEL_DIR)
+						MODEL_PATH = os.path.join(MODEL_DIR, "model.pt")
+
+					torch.save(F.state_dict(), MODEL_PATH)
+
+
+					# Save Optimizer to be used for next epoch.
+					OPT_PATH = args.opt_path
+					if OPT_PATH is None:
+						MODEL_DIR = os.path.join("..", "models")
+						if not os.path.exists(MODEL_DIR):
+							os.makedirs(MODEL_DIR)
+						OPT_PATH = os.path.join(MODEL_DIR, "opt.pt")
+
+					torch.save(opt.state_dict(), OPT_PATH)
+
+					print("Models and Optimizers Saved.")
+
+			# if (batch_number > 0) and (batch_number % 200 == 0):
+			# 	F.eval()
+			# 	val = Validate(200)
+			# 	print("Validation Error ", val)
+			# 	F.train()
 
 	# --------------- End of Epoch --------------- #
 
