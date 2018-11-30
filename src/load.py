@@ -27,7 +27,7 @@ def Validate(num_datapoints):
 				node_obj.token = "UNKNOWN"
 
 		prediction_val = F([conjecture], [statement])
-		_, prediction_label = torch.max(prediction_val)
+		_, prediction_label = torch.max(prediction_val, dim = 1)
 		prediction_label = prediction_label.numpy()
 
 		if datapoint.label != prediction_label[0]:
