@@ -14,9 +14,6 @@ def Validate(num_datapoints):
 
 	err_count = 0
 	count = 0
-	conjectures = []
-	statements = []
-	labels = []
 	for datapoint in validation_dataset():
 		conjecture = datapoint.conjecture
 		statement = datapoint.statement
@@ -29,15 +26,20 @@ def Validate(num_datapoints):
 		prediction_val = F([conjecture], [statement])
 		_, prediction_label = torch.max(prediction_val, dim = 1)
 
-
 		if cuda_available:
 			prediction_label = prediction_label.cpu()
 		prediction_label = prediction_label.numpy()
+
+		print(label)
+		print(prediction_label)
 
 		if datapoint.label != prediction_label[0]:
 			err_count += 1
 
 		count += 1
+
+		if count % 100 == 0:
+			print("Count: ",count)
 
 		if count == num_datapoints:
 			break
@@ -47,6 +49,7 @@ def Validate(num_datapoints):
 	return err_count / count
 
 
+cuda_available = torch.cuda.is_available()
 
 MODEL_DIR = os.path.join("saved_model", "models")
 model_file = os.path.join(MODEL_DIR, "model.pt")
@@ -59,6 +62,6 @@ F.load_state_dict(torch.load(model_file, map_location = "cpu"))
 F.eval()
 
 print("Model Loaded!")
-err_fract = Validate(300)
+err_fract = Validate(1000)
 
 print("Validation Error: ", err_fract)

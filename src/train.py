@@ -19,9 +19,6 @@ def Validate(num_datapoints):
 
 	err_count = 0
 	count = 0
-	conjectures = []
-	statements = []
-	labels = []
 	for datapoint in validation_dataset():
 		conjecture = datapoint.conjecture
 		statement = datapoint.statement
@@ -107,22 +104,25 @@ for epoch in range(args.start_epoch, args.epochs):
 	conjecture_graph_batch = []
 	statement_graph_batch = []
 	label_batch = []
+
 	for datapoint in train_dataset():
-		if batch_index != args.batch_size: # Collect Batches 
-			# Map the graph object into an array of one hot vectors for both conjecture and statement.
-			conjecture_graph = datapoint.conjecture
-			statement_graph = datapoint.statement
-			label = label_to_one_hot(datapoint.label)
+		conjecture_graph = datapoint.conjecture
+		statement_graph = datapoint.statement
+		label = label_to_one_hot(datapoint.label)
 
-			conjecture_graph_batch.append(conjecture_graph)
-			statement_graph_batch.append(statement_graph)
-			label_batch.append(label)
+		conjecture_graph_batch.append(conjecture_graph)
+		statement_graph_batch.append(statement_graph)
+		label_batch.append(label)
 
-			batch_index += 1
+		if batch_index < args.batch_size:
 			continue
 
-# From HERE: CHECK TO SEE IF IT OVERFITS WITH A SINGLE BATCH REPEATELDY FED IN by uncommenting while and print
-	# while (1): # DELETE
+		# Start Training! Skip if batch size is 1 or les.
+		if len(label) <= 1:
+			break
+
+	# From HERE: CHECK TO SEE IF IT OVERFITS WITH A SINGLE BATCH REPEATELDY FED IN by uncommenting while and print
+		# while (1): # DELETE
 		predict_val = F(conjecture_graph_batch, statement_graph_batch)
 
 		if cuda_available:
@@ -139,7 +139,6 @@ for epoch in range(args.start_epoch, args.epochs):
 		opt.step()
 # To Here
 
-		batch_index = 0
 		conjecture_graph_batch = []
 		statement_graph_batch = []
 		label_batch = []
@@ -150,7 +149,7 @@ for epoch in range(args.start_epoch, args.epochs):
 			print("Trained %d Batches" %batch_number)
 			print("Train Error: ", curr_loss)
 
-		# Train after this many batches.
+		# Save after this many batches.
 		if (batch_number > 0) and (batch_number % 100 == 0):
 			# Save Model After Each Epoch
 			MODEL_PATH = args.model_path 
