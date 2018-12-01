@@ -94,7 +94,7 @@ cuda_available = torch.cuda.is_available()
 loss = nn.BCEWithLogitsLoss() # Binary Cross-Entropy Loss
 
 # Define Model. Decide whether to load (first case) or start new (else)
-F = FormulaNet(args.num_steps, loss, cuda_available)
+F = FormulaNet(args.num_steps, cuda_available)
 F.train()
 
 opt = torch.optim.RMSprop(F.parameters(), lr = args.lr, alpha = args.weight_decay)
