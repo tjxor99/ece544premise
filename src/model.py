@@ -218,11 +218,9 @@ class max_pool_dense_graph(nn.Module):
 
 
 class FormulaNet(nn.Module):
-    def __init__(self, num_steps, loss, cuda_available = False):
+    def __init__(self, num_steps, cuda_available = False):
         super(FormulaNet, self).__init__()
         # Initialize models
-        self.loss = loss
-
         self.dense_map = LinearMap() # maps one_hot -> 256 dimension vector
         self.FP = FPClass()
         self.FI = FIClass()
@@ -549,20 +547,8 @@ class FormulaNet(nn.Module):
         prediction = self.Classifier(conj_batch, state_batch)
 
         return prediction
-        # predict_val, predicted_label = torch.max(prediction, dim = 1) # max_val, argmax val
-        # return predict_val, predicted_label
 
 
-    # def cuda(self):
-    #     self.loss.cuda()
-    #     self.dense_map.cuda()
-    #     self.FP.cuda()
-    #     self.FI.cuda()
-    #     self.FO.cuda()
-    #     self.FL.cuda()
-    #     self.FR.cuda()
-    #     self.FH.cuda()
-    #     self.Classifier.cuda()
 
 # if __name__ == "__main__":
     # graph_to_index_offline()

@@ -25,7 +25,11 @@ def Validate(num_datapoints):
 		label = datapoint.label
 
 		for node_id, node_obj in conjecture.nodes.items(): # Find and replace unknowns
-			if node_obj not in tokens_to_index.keys(): # UNKOWN token
+			if node_obj.token not in tokens_to_index.keys(): # UNKOWN token
+				node_obj.token = "UNKNOWN"
+
+		for node_id, node_obj in statement.nodes.items():
+			if node_obj.token not in tokens_to_index.keys():
 				node_obj.token = "UNKNOWN"
 
 		prediction_val = F([conjecture], [statement])
@@ -35,10 +39,16 @@ def Validate(num_datapoints):
 			prediction_label = prediction_label.cpu()
 		prediction_label = prediction_label.numpy()
 
+		# print(label)
+		# print(prediction_label)
+
 		if datapoint.label != prediction_label[0]:
 			err_count += 1
 
 		count += 1
+
+		if count % 100 == 0:
+			print("Count: ",count)
 
 		if count == num_datapoints:
 			break
@@ -119,6 +129,9 @@ for epoch in range(args.start_epoch, args.epochs):
 
 		# Start Training! Skip if batch size is 1 or les.
 		else:
+			if len(label_batch) <= 1:
+				break
+				
 			# Forward
 			predict_val = F(conjecture_graph_batch, statement_graph_batch)
 
