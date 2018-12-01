@@ -20,7 +20,11 @@ def Validate(num_datapoints):
 		label = datapoint.label
 
 		for node_id, node_obj in conjecture.nodes.items(): # Find and replace unknowns
-			if node_obj not in tokens_to_index.keys(): # UNKOWN token
+			if node_obj.token not in tokens_to_index.keys(): # UNKOWN token
+				node_obj.token = "UNKNOWN"
+
+		for node_id, node_obj in statement.nodes.items():
+			if node_obj.token not in tokens_to_index.keys():
 				node_obj.token = "UNKNOWN"
 
 		prediction_val = F([conjecture], [statement])
@@ -30,8 +34,8 @@ def Validate(num_datapoints):
 			prediction_label = prediction_label.cpu()
 		prediction_label = prediction_label.numpy()
 
-		print(label)
-		print(prediction_label)
+		# print(label)
+		# print(prediction_label)
 
 		if datapoint.label != prediction_label[0]:
 			err_count += 1
@@ -51,12 +55,11 @@ def Validate(num_datapoints):
 
 cuda_available = torch.cuda.is_available()
 
-MODEL_DIR = os.path.join("saved_model", "models")
+MODEL_DIR = os.path.join("..", "models")
 model_file = os.path.join(MODEL_DIR, "model.pt")
 
 
-loss = nn.BCEWithLogitsLoss() # Binary Cross-Entropy Loss
-F = FormulaNet(5, loss)
+F = FormulaNet(1)
 
 F.load_state_dict(torch.load(model_file, map_location = "cpu"))
 F.eval()
