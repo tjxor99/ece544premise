@@ -6,7 +6,8 @@ from holstep import *
 
 # data_directory = os.path.join("..", "data")
 # data_directory = "/home/joseph/shared_data"
-data_directory = "/home/joseph/formulanet/ece544premise/data"
+# data_directory = "/home/joseph/formulanet/ece544premise/data"
+data_directory = "/home/seotaek/ece544premise/data"
 # formulanet/ece544premise/data"
 test_directory = os.path.join(data_directory, "test")
 train_directory = os.path.join(data_directory, "train")
