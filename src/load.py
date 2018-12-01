@@ -59,7 +59,7 @@ MODEL_DIR = os.path.join("..", "models")
 model_file = os.path.join(MODEL_DIR, "model.pt")
 
 
-F = FormulaNet(1)
+F = FormulaNet(1, cuda_available)
 
 F.load_state_dict(torch.load(model_file, map_location = "cpu"))
 F.eval()
