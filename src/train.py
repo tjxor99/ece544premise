@@ -104,9 +104,9 @@ model_file = os.path.join(MODEL_DIR, "model.pt")
 opt_file = os.path.join(MODEL_DIR, "opt.pt")
 
 F.load_state_dict(torch.load(model_file))
-
+# utils.load_checkpoint
 opt = torch.optim.RMSprop(F.parameters(), lr = args.lr, alpha = args.weight_decay)
-# opt.load_state_dict(torch.load(opt_file))
+opt.load_state_dict(torch.load(opt_file))
 # End Loading
 
 

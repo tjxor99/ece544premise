@@ -63,7 +63,9 @@ F = FormulaNet(1, cuda_available)
 if cuda_available:
 	F.cuda()
 
-F.load_state_dict(torch.load(model_file, map_location = "cpu"))
+# F.load_state_dict(torch.load(model_file, map_location = "cpu"))
+utils.load_checkpoint(MODEL_DIR)
+
 F.eval()
 
 print("Model Loaded!")
