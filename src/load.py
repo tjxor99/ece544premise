@@ -55,17 +55,19 @@ def Validate(num_datapoints):
 
 cuda_available = torch.cuda.is_available()
 
-MODEL_DIR = os.path.join("..", "models")
-model_file = os.path.join(MODEL_DIR, "model.pt")
-
-
 F = FormulaNet(1, cuda_available)
-if cuda_available:
-	F.cuda()
+
+# Load Model
+MODEL_DIR = os.path.join("..", "models")
+filepath = os.path.join(checkpoint, 'last.pth.tar')
+utils.load_checkpoint(file_path)
+# model_file = os.path.join(MODEL_DIR, "model.pt")
+
+
+# if cuda_available:
+# 	F.cuda()
 
 # F.load_state_dict(torch.load(model_file, map_location = "cpu"))
-utils.load_checkpoint(MODEL_DIR)
-
 F.eval()
 
 print("Model Loaded!")
