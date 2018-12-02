@@ -60,6 +60,8 @@ model_file = os.path.join(MODEL_DIR, "model.pt")
 
 
 F = FormulaNet(1, cuda_available)
+if cuda_available:
+	F.cuda()
 
 F.load_state_dict(torch.load(model_file, map_location = "cpu"))
 F.eval()
