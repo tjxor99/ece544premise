@@ -92,6 +92,10 @@ cuda_available = torch.cuda.is_available()
 F = FormulaNet(args.num_steps, cuda_available)
 
 F.load_state_dict(torch.load(model_file))
+if cuda_available: 
+	F.cuda()
+	print("Cuda Enabled!")
+F.train()
 
 
 opt = torch.optim.RMSprop(F.parameters(), lr = args.lr, alpha = args.weight_decay)
@@ -103,10 +107,6 @@ opt.load_state_dict(torch.load(opt_file))
 # End Loading
 
 
-if cuda_available: 
-	F.cuda()
-	print("Cuda Enabled!")
-F.train()
 
 # Loss Function
 loss = nn.BCEWithLogitsLoss() # Binary Cross-Entropy Loss
