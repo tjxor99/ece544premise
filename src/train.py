@@ -101,12 +101,11 @@ F = FormulaNet(args.num_steps, cuda_available)
 MODEL_DIR = os.path.join("..", "models")
 model_file = os.path.join(MODEL_DIR, "model.pt")
 
-
-F = FormulaNet(1, cuda_available)
+F.load_state_dict(torch.load(model_file))
+# F.load_state_dict(torch.load(model_file, map_location = "gpu"))
 if cuda_available:
 	F.cuda()
 
-F.load_state_dict(torch.load(model_file, map_location = "gpu"))
 # End Loading
 
 
