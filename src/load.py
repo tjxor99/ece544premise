@@ -65,6 +65,6 @@ F.load_state_dict(torch.load(model_file, map_location = "cpu"))
 F.eval()
 
 print("Model Loaded!")
-err_fract = Validate(1000)
+err_fract = Validate(10000)
 
 print("Validation Error: ", err_fract)
