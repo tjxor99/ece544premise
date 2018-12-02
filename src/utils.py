@@ -37,7 +37,7 @@ def save_checkpoint(state, checkpoint):
     torch.save(state, filepath)
 
 
-def load_checkpoint(checkpoint, optimizer=None):
+def load_checkpoint(checkpoint, optimizer = None):
     """Loads model parameters (state_dict) from file_path. If optimizer is provided, loads state_dict of
     optimizer assuming it is present in checkpoint.
 
@@ -50,6 +50,9 @@ def load_checkpoint(checkpoint, optimizer=None):
         raise ("File doesn't exist {}".format(checkpoint))
     checkpoint = torch.load(checkpoint)
     F.load_state_dict(checkpoint['state_dict'])
+
+	if cuda_available:
+		F.cuda()
 
     if opt:
         opt.load_state_dict(checkpoint['optim_dict'])
