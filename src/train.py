@@ -76,35 +76,33 @@ parser.add_argument('--weight_decay', type = float, default = 1e-4, help = "Weig
 parser.add_argument('--lr_decay', type = float, default = 3., help = 'Multiplicative Factor by which to decay learning rate by after each epoch, > 1')
 parser.add_argument('--start_epoch', type = int, default = 0, help = 'Epoch to resume with')
 parser.add_argument('--start_batch', type = int, default = 0, help = 'Batch Number to resume with')
+parser.add_argument('--load', type = bool, default = False, help = 'Batch Number to resume with')
+
 
 args = parser.parse_args()
 print(args)
 
 MODEL_DIR = os.path.join("..", "models")
-model_file = os.path.join(MODEL_DIR, "model.pt")
-opt_file = os.path.join(MODEL_DIR, "opt.pt")
-
-
-
 
 cuda_available = torch.cuda.is_available()
+
 # Define Model. Decide whether to load (first case) or start new (else)
 F = FormulaNet(args.num_steps, cuda_available)
+opt = torch.optim.RMSprop(F.parameters(), lr = args.lr, alpha = args.weight_decay)
 
-F.load_state_dict(torch.load(model_file))
-if cuda_available: 
-	F.cuda()
-	print("Cuda Enabled!")
+
+if args.load is True:
+	file_path = os.path.join(MODEL_DIR, 'last.pth.tar')
+	utils.load_checkpoint(F, file_path, opt)
+
+else: # When not loading, make sure cuda is enabled.
+	if cuda_available: 
+		F.cuda()
+		print("Cuda Enabled!")
+
+
 F.train()
 
-
-opt = torch.optim.RMSprop(F.parameters(), lr = args.lr, alpha = args.weight_decay)
-opt.load_state_dict(torch.load(opt_file))
-
-# If Loading
-# filepath = os.path.join(MODEL_DIR, 'last.pth.tar')
-# utils.load_checkpoint(file_path, opt)
-# End Loading
 
 
 
