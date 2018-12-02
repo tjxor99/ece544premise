@@ -59,7 +59,7 @@ F = FormulaNet(1, cuda_available)
 
 # Load Model
 MODEL_DIR = os.path.join("..", "models")
-filepath = os.path.join(checkpoint, 'last.pth.tar')
+filepath = os.path.join(MODEL_DIR, 'last.pth.tar')
 utils.load_checkpoint(file_path)
 # model_file = os.path.join(MODEL_DIR, "model.pt")
 
