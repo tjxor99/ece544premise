@@ -37,7 +37,7 @@ def save_checkpoint(state, checkpoint):
     torch.save(state, filepath)
 
 
-def load_checkpoint(F, checkpoint, optimizer = None):
+def load_checkpoint(F, checkpoint, opt = None):
 	"""Loads model parameters (state_dict) from file_path. If optimizer is provided, loads state_dict of
 		optimizer assuming it is present in checkpoint.
 
