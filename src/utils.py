@@ -46,15 +46,16 @@ def load_checkpoint(checkpoint, optimizer = None):
         model: (torch.nn.Module) model for which the parameters are loaded
         optimizer: (torch.optim) optional: resume optimizer from checkpoint
     """
-    if not os.path.exists(checkpoint):
-        raise ("File doesn't exist {}".format(checkpoint))
-    checkpoint = torch.load(checkpoint)
-    F.load_state_dict(checkpoint['state_dict'])
+	if not os.path.exists(checkpoint):
+		raise ("File doesn't exist {}".format(checkpoint))
+	checkpoint = torch.load(checkpoint)
+	F.load_state_dict(checkpoint['state_dict'])
 
 	if cuda_available:
 		F.cuda()
+	
 
-    if opt:
-        opt.load_state_dict(checkpoint['optim_dict'])
+	if opt:
+		opt.load_state_dict(checkpoint['optim_dict'])
 
-    return checkpoint
+	return checkpoint
