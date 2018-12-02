@@ -96,22 +96,21 @@ loss = nn.BCEWithLogitsLoss() # Binary Cross-Entropy Loss
 
 # Define Model. Decide whether to load (first case) or start new (else)
 F = FormulaNet(args.num_steps, cuda_available)
+opt = torch.optim.RMSprop(F.parameters(), lr = args.lr, alpha = args.weight_decay)
 
 # If Loading
 MODEL_DIR = os.path.join("..", "models")
 model_file = os.path.join(MODEL_DIR, "model.pt")
+opt_file = os.path.join(MODEL_DIR, "opt.pt")
+
 
 F.load_state_dict(torch.load(model_file))
-# F.load_state_dict(torch.load(model_file, map_location = "gpu"))
-if cuda_available:
-	F.cuda()
-
+opt.load_state_dict(torch.load(opt_file))
 # End Loading
 
 
 F.train()
 
-opt = torch.optim.RMSprop(F.parameters(), lr = args.lr, alpha = args.weight_decay)
 if cuda_available: 
 	F.cuda()
 	print("Cuda Enabled!")
