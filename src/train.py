@@ -79,6 +79,7 @@ parser.add_argument('--model_path', type = str, default = None, help = 'Path to 
 parser.add_argument('--opt_path', type = str, default = None, help = 'Path to Optimizer File')
 
 parser.add_argument('--start_epoch', type = int, default = 0, help = 'Epoch to resume with')
+parser.add_argument('--start_batch', type = int, default = 0, help = 'Batch Number to resume with')
 
 
 # parser.add_argument('--start_epoch', type = int, default = 0, help = 'Epoch to resume with')
@@ -95,6 +96,20 @@ loss = nn.BCEWithLogitsLoss() # Binary Cross-Entropy Loss
 
 # Define Model. Decide whether to load (first case) or start new (else)
 F = FormulaNet(args.num_steps, cuda_available)
+
+# If Loading
+MODEL_DIR = os.path.join("..", "models")
+model_file = os.path.join(MODEL_DIR, "model.pt")
+
+
+F = FormulaNet(1, cuda_available)
+if cuda_available:
+	F.cuda()
+
+F.load_state_dict(torch.load(model_file, map_location = "gpu"))
+# End Loading
+
+
 F.train()
 
 opt = torch.optim.RMSprop(F.parameters(), lr = args.lr, alpha = args.weight_decay)
@@ -116,6 +131,15 @@ for epoch in range(args.start_epoch, args.epochs):
 	label_batch = []
 
 	for datapoint in train_dataset():
+		if batch_number < args.start_batch: # Get to starting batch train dataset.
+			batch_index += 1
+			if batch_index < args.batch_size:
+				continue
+			else:
+				batch_index = 0
+				batch_number += 1
+			continue
+
 		conjecture_graph = datapoint.conjecture
 		statement_graph = datapoint.statement
 		label = label_to_one_hot(datapoint.label)
