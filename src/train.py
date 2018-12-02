@@ -74,47 +74,42 @@ parser.add_argument('--num_steps', type = int, default = 1, help = 'Number of up
 parser.add_argument('--lr', type = float, default = 1e-3, help = 'Initial learning rate for RMSProp')
 parser.add_argument('--weight_decay', type = float, default = 1e-4, help = "Weight decay parameter for RMSProp")
 parser.add_argument('--lr_decay', type = float, default = 3., help = 'Multiplicative Factor by which to decay learning rate by after each epoch, > 1')
-
-parser.add_argument('--load_model', type = bool, default = False, help  = 'Set True if loading model')
-parser.add_argument('--model_path', type = str, default = None, help = 'Path to Model File')
-parser.add_argument('--opt_path', type = str, default = None, help = 'Path to Optimizer File')
-
 parser.add_argument('--start_epoch', type = int, default = 0, help = 'Epoch to resume with')
 parser.add_argument('--start_batch', type = int, default = 0, help = 'Batch Number to resume with')
-
-
-# parser.add_argument('--start_epoch', type = int, default = 0, help = 'Epoch to resume with')
 
 args = parser.parse_args()
 print(args)
 
-
-cuda_available = torch.cuda.is_available()
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# Loss Function
-loss = nn.BCEWithLogitsLoss() # Binary Cross-Entropy Loss
-
-# Define Model. Decide whether to load (first case) or start new (else)
-F = FormulaNet(args.num_steps, cuda_available)
-
-# If Loading
 MODEL_DIR = os.path.join("..", "models")
 model_file = os.path.join(MODEL_DIR, "model.pt")
 opt_file = os.path.join(MODEL_DIR, "opt.pt")
 
+
+
+
+cuda_available = torch.cuda.is_available()
+# Define Model. Decide whether to load (first case) or start new (else)
+F = FormulaNet(args.num_steps, cuda_available)
+
 F.load_state_dict(torch.load(model_file))
-# utils.load_checkpoint
+
+
 opt = torch.optim.RMSprop(F.parameters(), lr = args.lr, alpha = args.weight_decay)
 opt.load_state_dict(torch.load(opt_file))
+
+# If Loading
+# filepath = os.path.join(MODEL_DIR, 'last.pth.tar')
+# utils.load_checkpoint(file_path, opt)
 # End Loading
 
-
-F.train()
 
 if cuda_available: 
 	F.cuda()
 	print("Cuda Enabled!")
+F.train()
+
+# Loss Function
+loss = nn.BCEWithLogitsLoss() # Binary Cross-Entropy Loss
 
 
 """ 
