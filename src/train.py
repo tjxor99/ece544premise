@@ -189,14 +189,6 @@ for epoch in range(args.start_epoch, args.epochs):
 				utils.save_checkpoint(state_dict, checkpoint = MODEL_DIR)
 				print("Models and Optimizers Saved.")
 
-			# Reset batch
-			conjecture_graph_batch = []
-			statement_graph_batch = []
-			label_batch = []
-
-			batch_index = 0
-			batch_number += 1
-
 
 	# --------------- End of Epoch --------------- #
 
@@ -212,25 +204,8 @@ for epoch in range(args.start_epoch, args.epochs):
 	
 
 	# Save Model After Each Epoch
-	MODEL_PATH = args.model_path 
-	if MODEL_PATH is None: # If no model path was specified. Write to default model_path in ../model
-		MODEL_DIR = os.path.join("..", "models")
-		if not os.path.exists(MODEL_DIR):
-			os.makedirs(MODEL_DIR)
-		MODEL_PATH = os.path.join(MODEL_DIR, "model.pt")
-
-	torch.save(F.state_dict(), MODEL_PATH)
-
-
-	# Save Optimizer to be used for next epoch.
-	OPT_PATH = args.opt_path
-	if OPT_PATH is None:
-		MODEL_DIR = os.path.join("..", "models")
-		if not os.path.exists(MODEL_DIR):
-			os.makedirs(MODEL_DIR)
-		OPT_PATH = os.path.join(MODEL_DIR, "opt.pt")
-
-	torch.save(opt.state_dict(), OPT_PATH)
+	state_dict = {'epoch:': epoch + 1, 'state_dict': F.state_dict(), 'optim_dict': opt.state_dict()}
+	utils.save_checkpoint(state_dict, checkpoint = MODEL_DIR)
 
 	print("Models and Optimizers Saved.")
 
@@ -239,6 +214,6 @@ for epoch in range(args.start_epoch, args.epochs):
 	# Validate Model after Each Epoch
 	F.eval()
 	val_err = Validate(2000)
+
 	F.train()
-	print("Validation Error: "+str(val_err))
 
