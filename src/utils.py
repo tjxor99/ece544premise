@@ -51,7 +51,7 @@ def load_checkpoint(F, checkpoint, optimizer = None):
 	checkpoint = torch.load(checkpoint)
 	F.load_state_dict(checkpoint['state_dict'])
 
-	if cuda_available:
+	if F.cuda_available:
 		F.cuda()
 
 
