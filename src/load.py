@@ -1,4 +1,4 @@
-
+import utils
 import torch
 import torch.nn as nn
 
@@ -71,6 +71,6 @@ utils.load_checkpoint(file_path)
 F.eval()
 
 print("Model Loaded!")
-err_fract = Validate(1000)
+err_fract = Validate(10000)
 
 print("Validation Error: ", err_fract)
