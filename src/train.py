@@ -150,6 +150,7 @@ for epoch in range(args.start_epoch, args.epochs):
 				break
 				
 			# Forward
+			opt.zero_grad()
 			predict_val = F(conjecture_graph_batch, statement_graph_batch)
 
 			if cuda_available:
