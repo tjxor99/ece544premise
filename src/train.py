@@ -118,8 +118,7 @@ for epoch in range(args.start_epoch, args.epochs):
 	# I will assume the graphs are shuffled somehow.
 	batch_index = 0
 	batch_number = 0 # Number of batches iterated.
-	conjecture_graph_batch = []
-	statement_graph_batch = []
+	conjecture_state_batch = []
 	label_batch = []
 
 	for datapoint in train_dataset():
@@ -136,8 +135,7 @@ for epoch in range(args.start_epoch, args.epochs):
 		statement_graph = datapoint.statement
 		label = label_to_one_hot(datapoint.label)
 
-		conjecture_graph_batch.append(conjecture_graph)
-		statement_graph_batch.append(statement_graph)
+		conjecture_state_batch.append([conjecture_graph, statement_graph])
 		label_batch.append(label)
 
 		if batch_index < args.batch_size - 1: # Keep collecting (conjecture, statement) pairs.
@@ -151,7 +149,7 @@ for epoch in range(args.start_epoch, args.epochs):
 				
 			# Forward
 			opt.zero_grad()
-			predict_val = F(conjecture_graph_batch, statement_graph_batch)
+			predict_val = F(conjecture_state_batch)
 
 			if cuda_available:
 				label_batch_tensor = torch.Tensor(label_batch).cuda()
@@ -168,8 +166,7 @@ for epoch in range(args.start_epoch, args.epochs):
 			batch_number += 1
 
 			batch_index = 0
-			conjecture_graph_batch = []
-			statement_graph_batch = []
+			conjecture_state_batch = []
 			label_batch = []
 
 			if (batch_number > 0) and (batch_number % 50 == 0):

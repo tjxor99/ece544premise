@@ -270,7 +270,7 @@ class FormulaNet(nn.Module):
                     left_indices[xv_id_offset].append(left_index)
                     left_index += 1
 
-                    xu_dense = dense_nodes[xv_id_offset]
+                    xu_dense = dense_nodes[xu_id_offset]
                     xw_dense = dense_nodes[xw_id_offset]
                     left_batch.append(torch.cat([xv_dense, xu_dense, xw_dense], dim = 0))
                     ev[xv_id_offset] += 1
@@ -426,7 +426,7 @@ class FormulaNet(nn.Module):
         return one_hot_graph
 
 
-    def forward(self, conjecture_graphs, statement_graphs):
+    def forward(self, conjecture_state_graphs):
         """
         @ Args:
             conjecture_graph (arr-like of Graph Objects): Inter-graph Batch of Conjectures
@@ -438,13 +438,13 @@ class FormulaNet(nn.Module):
         start_index = 0
         conj_indices = {} # conj_index[i] = [first node in conjecture i, last node in conjecture i]
         state_indices = {} # similar
-        for i in range(len(conjecture_graphs)): # Iterate over inter-graph-batch.
-            conjecture_graph = conjecture_graphs[i]
+        for i in range(len(conjecture_state_graphs)): # Iterate over inter-graph-batch.
+            conjecture_graph = conjecture_state_graphs[i][0]
             end_index = start_index + len(conjecture_graph.nodes)
             conj_indices[i] = [start_index, end_index]
 
             start_index = end_index
-            statement_graph = statement_graphs[i]
+            statement_graph = conjecture_state_graphs[i][1]
             end_index = start_index + len(statement_graph.nodes)
             state_indices[i] = [start_index, end_index]
 
