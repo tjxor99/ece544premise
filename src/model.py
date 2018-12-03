@@ -240,14 +240,13 @@ class FormulaNet(nn.Module):
 
 
     # Given a graph and all the functions, do one update in parallel for all nodes in the graph.
-    def fullPass(self, dense_nodes, G):
+    def fullPass(self, dense_nodes, Gs):
         """
         @ Args:
-            <F?> (Neural Network object)
-            dense_nodes (2D Array): 0-axis indexes the node index. 
-                dense_nodes[i] is the 256 dimensional dense representation of the ith node, 
+            dense_nodes (3D Array): 0-axis is the inter-graph batching index
+                dense_nodes[batch_index][i] is the 256 dimensional dense representation of the ith node, 
                 where i is the node's unique id in <Graph> object
-            G (<Graph> object): Graph object, necessary to iterate over edges and trelets
+            G (Array of <Graph> object): Graph object, necessary to iterate over edges and trelets
 
         @ Vars:
             in_batch (list): Whatever will be fed into FI, FO, ... FR
@@ -260,212 +259,303 @@ class FormulaNet(nn.Module):
         @ Return:
             new_nodes (Same shape as Mdense_nodes>): One-step update of <dense_nodes>.
         """
-        treelets = treelet_funct(G)
-
         # dv is determined by the number of summands for FI + summands of FO
-
         if self.cuda_available:
-            dv = torch.zeros(len(G.nodes)).cuda()
+            dv = torch.zeros([dense_nodes.shape[0]] ).cuda()
         else:
-            dv = torch.zeros(len(G.nodes))
+            dv = torch.zeros(dense_nodes.shape[0])
 
-        # FI: Pass in Full Graph (\forall xv), [(xu, xv) for xu \in parents(xv)]
+        start_index = 0 # To keep track of which graph's xv_id and xu_id we are using.
+
+        in_index = 0
+        in_indices = {} # for each x in Gs, in_indices[x] gives the indices of in_batch related for summing
         in_batch = []
-        in_indices = {}
-        index = 0
-        for xv_id, xv_obj in G.nodes.items():
-            in_indices[xv_id] = []
-            xv_dense = dense_nodes[xv_id]
-            for xu_id in xv_obj.parents:
-                in_indices[xv_id].append(index)
-                index += 1
 
-                xu_dense = dense_nodes[xu_id]
-                in_batch.append(torch.cat([xu_dense, xv_dense], dim = 0))
-                dv[xv_id] += 1
+        out_index = 0
+        out_indices = {}
+        out_batch = []
+
+        for G in Gs:
+            end_index = start_index + len(G.nodes)
+            for xv_id, xv_obj in G.nodes.items():
+                xv_id_offset = xv_id + start_index
+                xv_dense = dense_nodes[xv_id_offset]
+
+                in_indices[xv_id_offset] = []
+                out_indices[xv_id_offset] = []
+
+                for xu_id in xv_obj.parents: # For FI
+                    xu_id_offset = xu_id + start_index
+                    in_indices[xv_id_offset].append(in_index)
+                    in_index += 1
+
+                    xu_dense = dense_nodes[xu_id_offset]
+                    in_batch.append(torch.cat([xu_dense, xv_dense], dim = 0))
+                    dv[xv_id_offset] += 1
+
+                for xu_id in xv_obj.children: # For FO
+                    xu_id_offset = xu_id + start_index
+                    out_indices[xv_id_offset].append(out_index)
+                    out_index += 1
+
+                    xu_dense = dense_nodes[xu_id_offset]
+                    out_batch.append(torch.cat([xv_dense, xu_dense], dim = 0))
+                    dv[xv_id_offset] += 1
+
+            start_index += len(G.nodes)
 
         if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
             if self.cuda_available:
-                in_sum = torch.zeros([len(G.nodes), 256]).cuda()
+                in_sum = torch.zeros(dense_nodes.shape).cuda()
             else:
-                in_sum = torch.zeros([len(G.nodes), 256])
-            for xv_id in G.nodes.items():
-                in_indices[xv_id].append(xv_id)
+                in_sum = torch.zeros(dense_nodes.shape)
         else:
             in_batch = torch.stack(in_batch, dim = 0)
             in_sum = self.FI(in_batch) 
 
-
-        # FO: Sum over all (xv, children of xv) 
-        in_batch = []
-        out_indices = {}
-        index = 0
-        for xv_id, xv_obj in G.nodes.items():
-            out_indices[xv_id] = []
-            xv_dense = dense_nodes[xv_id]
-            for xu_id in xv_obj.children:
-                out_indices[xv_id].append(index)
-                index += 1
-
-                xu_dense = dense_nodes[xu_id]
-                in_batch.append(torch.cat([xv_dense, xu_dense], dim = 0))
-                dv[xv_id] += 1
-
-        if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
+        # Pass out_batch into FO
+        if len(out_batch) <= 1: 
             if self.cuda_available:
-                out_sum = torch.zeros([len(G.nodes), 256]).cuda()
+                in_sum = torch.zeros(dense_nodes.shape).cuda()
             else:
-                out_sum = torch.zeros([len(G.nodes), 256])
-            for xv_id in G.nodes.items():
-                out_indices[xv_id].append(xv_id)
+                in_sum = torch.zeros(dense_nodes.shape)
         else:
-            in_batch = torch.stack(in_batch, dim = 0)
-            out_sum = self.FO(in_batch)
+            out_batch = torch.stack(out_batch, dim = 0)
+            out_sum = self.FO(out_batch)
 
-        # print("FO Output ", out_sum)
-
-        # Treelets!!
-        if self.cuda_available:
-            ev = torch.zeros(len(G.nodes)).cuda()
-        else:
-            ev = torch.zeros(len(G.nodes))
-
-
-        # Left Treelet: (xv, xu, xw)
-        in_batch = []
-        left_indices = {}
-        index = 0
-        for xv_id in G.nodes.keys():
-            left_indices[xv_id] = []
-            for _, xu_id, xw_id in treelets[xv_id][0]:
-                left_indices[xv_id].append(index)
-                index += 1
-
-                xv_dense = dense_nodes[xv_id]
-                xu_dense = dense_nodes[xu_id]
-                xw_dense = dense_nodes[xw_id]
-                in_batch.append(torch.cat([xv_dense, xu_dense, xw_dense]))
-                ev[xv_id] += 1
-
-        # WHEN LEFT_TREELETS IS EMPTY
-        if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
-            if self.cuda_available:
-                left_sum = torch.zeros([len(G.nodes), 256]).cuda()
-            else:
-                left_sum = torch.zeros([len(G.nodes), 256])
-            for xv_id in G.nodes.keys():
-                left_indices[xv_id].append(xv_id)
-        else:
-            in_batch = torch.stack(in_batch, dim = 0)
-            left_sum = self.FL(in_batch)
-
-        # print("FL Output ", left_sum)
-
-        # Head Treelet: xu, xv, xw
-        in_batch = []
-        head_indices = {}
-        index = 0
-        for xv_id in G.nodes.keys():
-            head_indices[xv_id] = []
-            for xu_id, _, xw_id in treelets[xv_id][1]:
-                head_indices[xv_id].append(index)
-                index += 1
-
-                xu_dense = dense_nodes[xu_id]
-                xv_dense = dense_nodes[xv_id]
-                xw_dense = dense_nodes[xw_id]
-                in_batch.append(torch.cat([xu_dense, xv_dense, xw_dense]))
-                ev[xv_id] += 1
-
-        if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
-            if self.cuda_available:
-                head_sum = torch.zeros([len(G.nodes), 256]).cuda()
-            else:
-                head_sum = torch.zeros([len(G.nodes), 256])
-            for xv_id in G.nodes.keys():
-                head_indices[xv_id].append(xv_id)
-        else:
-            in_batch = torch.stack(in_batch, dim = 0)
-            head_sum = self.FH(in_batch)
-
-
-        # print("FH Output ", head_sum)
-
-        # Right Treelet: xu, xw, xv
-        in_batch = []
-        right_indices = {}
-        index = 0
-        for xv_id in G.nodes.keys():
-            right_indices[xv_id] = []
-            for _, xu_id, xw_id in treelets[xv_id][2]:
-                right_indices[xv_id].append(index)
-                index += 1
-
-                xu_dense = dense_nodes[xu_id]
-                xw_dense = dense_nodes[xw_id]
-                xv_dense = dense_nodes[xv_id]
-                in_batch.append(torch.cat([xu_dense, xw_dense, xv_dense]))
-                ev[xv_id] += 1
-
-        if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
-            if self.cuda_available:
-                right_sum = torch.zeros([len(G.nodes), 256]).cuda()
-            else:
-                right_sum = torch.zeros([len(G.nodes), 256])
-            for xv_id in G.nodes.keys():
-                right_indices[xv_id].append(xv_id)
-        else:
-            in_batch = torch.stack(in_batch, dim = 0)
-            right_sum = self.FR(in_batch)
-
-        # print("FR Output ", right_sum)
-
-
-        # Add and then send to FP to update all the nodes!
         in_out_sum = []
-        treelet_sum = []
-        for xv_id in G.nodes.keys():
-            new_in_sum = torch.sum(in_sum[in_indices[xv_id], :], dim = 0)
-            new_out_sum = torch.sum(out_sum[out_indices[xv_id], :], dim = 0)
+        start_index = 0
+        for G in Gs:
+            end_index = start_index + len(G.nodes)
+            for xv_id in G.nodes.keys():
+                new_in_sum = torch.sum(in_sum[in_indices[xv_id], :], dim = 0)
+                new_out_sum = torch.sum(out_sum[out_indices[xv_id], :], dim = 0)
 
-            new_left_sum = torch.sum(left_sum[left_indices[xv_id], :], dim = 0)
-            new_head_sum = torch.sum(head_sum[head_indices[xv_id], :], dim = 0)
-            new_right_sum = torch.sum(right_sum[right_indices[xv_id], :], dim = 0)
+                # new_left_sum = torch.sum(left_sum[left_indices[xv_id], :], dim = 0)
+                # new_head_sum = torch.sum(head_sum[head_indices[xv_id], :], dim = 0)
+                # new_right_sum = torch.sum(right_sum[right_indices[xv_id], :], dim = 0)
 
-            # Append in_out_sum only if the number of summands is not zero. Else, append 0's.
-            temp = new_in_sum + new_out_sum
-            if len(temp.shape) != 0:
-                if dv[xv_id] == 0: # xv has 0 degree
+                # Append in_out_sum only if the number of summands is not zero. Else, append 0's.
+                temp = new_in_sum + new_out_sum
+                if len(temp.shape) != 0:
+                    if dv[xv_id] == 0: # xv has 0 degree
+                        if self.cuda_available:
+                            in_out_sum.append(torch.zeros(256).cuda())
+                        else:
+                            in_out_sum.append(torch.zeros(256))
+                    else:
+                        in_out_sum.append(temp / dv[xv_id])
+                else:
                     if self.cuda_available:
                         in_out_sum.append(torch.zeros(256).cuda())
                     else:
                         in_out_sum.append(torch.zeros(256))
-                else:
-                    in_out_sum.append(temp / dv[xv_id])
-            else:
-                if self.cuda_available:
-                    in_out_sum.append(torch.zeros(256).cuda())
-                else:
-                    in_out_sum.append(torch.zeros(256))
 
-            # Append treelet_sum only if the number of summands is not zero. Else, append 0's.
-            temp = new_left_sum + new_head_sum + new_right_sum
-            if len(temp.shape) != 0:
-                if ev[xv_id] == 0:
-                    if self.cuda_available:
-                        treelet_sum.append(torch.zeros(256).cuda())
-                    else:
-                        treelet_sum.append(torch.zeros(256))
-                else:
-                    treelet_sum.append(temp / ev[xv_id])
-            else:
-                if self.cuda_available:
-                    treelet_sum.append(torch.zeros(256).cuda())
-                else:
-                    treelet_sum.append(torch.zeros(256))
-
+            start_index += len(G.nodes)
         in_out_sum = torch.stack(in_out_sum, dim = 0)
-        treelet_sum = torch.stack(treelet_sum, dim = 0)
+        # print(in_out_sum.shape)
+
+
+        # HERE
+
+        # # FI: Pass in Full Graph (\forall xv), [(xu, xv) for xu \in parents(xv)]
+        # in_batch = []
+        # in_indices = {}
+        # index = 0
+        # for xv_id, xv_obj in G.nodes.items():
+        #     in_indices[xv_id] = []
+        #     xv_dense = dense_nodes[xv_id]
+        #     for xu_id in xv_obj.parents:
+        #         in_indices[xv_id].append(index)
+        #         index += 1
+
+        #         xu_dense = dense_nodes[xu_id]
+        #         in_batch.append(torch.cat([xu_dense, xv_dense], dim = 0))
+        #         dv[xv_id] += 1
+
+        # if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
+        #     if self.cuda_available:
+        #         in_sum = torch.zeros([len(G.nodes), 256]).cuda()
+        #     else:
+        #         in_sum = torch.zeros([len(G.nodes), 256])
+        #     for xv_id in G.nodes.items():
+        #         in_indices[xv_id].append(xv_id)
+        # else:
+        #     in_batch = torch.stack(in_batch, dim = 0)
+        #     in_sum = self.FI(in_batch) 
+
+
+        # # FO: Sum over all (xv, children of xv) 
+        # in_batch = []
+        # out_indices = {}
+        # index = 0
+        # for xv_id, xv_obj in G.nodes.items():
+        #     out_indices[xv_id] = []
+        #     xv_dense = dense_nodes[xv_id]
+        #     for xu_id in xv_obj.children:
+        #         out_indices[xv_id].append(index)
+        #         index += 1
+
+        #         xu_dense = dense_nodes[xu_id]
+        #         in_batch.append(torch.cat([xv_dense, xu_dense], dim = 0))
+        #         dv[xv_id] += 1
+
+        # if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
+        #     if self.cuda_available:
+        #         out_sum = torch.zeros([len(G.nodes), 256]).cuda()
+        #     else:
+        #         out_sum = torch.zeros([len(G.nodes), 256])
+        #     for xv_id in G.nodes.items():
+        #         out_indices[xv_id].append(xv_id)
+        # else:
+        #     in_batch = torch.stack(in_batch, dim = 0)
+        #     out_sum = self.FO(in_batch)
+
+        # # print("FO Output ", out_sum)
+
+        # treelets = treelet_funct(G)
+        # # Treelets!!
+        # if self.cuda_available:
+        #     ev = torch.zeros(len(G.nodes)).cuda()
+        # else:
+        #     ev = torch.zeros(len(G.nodes))
+
+
+        # # Left Treelet: (xv, xu, xw)
+        # in_batch = []
+        # left_indices = {}
+        # index = 0
+        # for xv_id in G.nodes.keys():
+        #     left_indices[xv_id] = []
+        #     for _, xu_id, xw_id in treelets[xv_id][0]:
+        #         left_indices[xv_id].append(index)
+        #         index += 1
+
+        #         xv_dense = dense_nodes[xv_id]
+        #         xu_dense = dense_nodes[xu_id]
+        #         xw_dense = dense_nodes[xw_id]
+        #         in_batch.append(torch.cat([xv_dense, xu_dense, xw_dense]))
+        #         ev[xv_id] += 1
+
+        # # WHEN LEFT_TREELETS IS EMPTY
+        # if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
+        #     if self.cuda_available:
+        #         left_sum = torch.zeros([len(G.nodes), 256]).cuda()
+        #     else:
+        #         left_sum = torch.zeros([len(G.nodes), 256])
+        #     for xv_id in G.nodes.keys():
+        #         left_indices[xv_id].append(xv_id)
+        # else:
+        #     in_batch = torch.stack(in_batch, dim = 0)
+        #     left_sum = self.FL(in_batch)
+
+        # # print("FL Output ", left_sum)
+
+        # # Head Treelet: xu, xv, xw
+        # in_batch = []
+        # head_indices = {}
+        # index = 0
+        # for xv_id in G.nodes.keys():
+        #     head_indices[xv_id] = []
+        #     for xu_id, _, xw_id in treelets[xv_id][1]:
+        #         head_indices[xv_id].append(index)
+        #         index += 1
+
+        #         xu_dense = dense_nodes[xu_id]
+        #         xv_dense = dense_nodes[xv_id]
+        #         xw_dense = dense_nodes[xw_id]
+        #         in_batch.append(torch.cat([xu_dense, xv_dense, xw_dense]))
+        #         ev[xv_id] += 1
+
+        # if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
+        #     if self.cuda_available:
+        #         head_sum = torch.zeros([len(G.nodes), 256]).cuda()
+        #     else:
+        #         head_sum = torch.zeros([len(G.nodes), 256])
+        #     for xv_id in G.nodes.keys():
+        #         head_indices[xv_id].append(xv_id)
+        # else:
+        #     in_batch = torch.stack(in_batch, dim = 0)
+        #     head_sum = self.FH(in_batch)
+
+
+        # # print("FH Output ", head_sum)
+
+        # # Right Treelet: xu, xw, xv
+        # in_batch = []
+        # right_indices = {}
+        # index = 0
+        # for xv_id in G.nodes.keys():
+        #     right_indices[xv_id] = []
+        #     for _, xu_id, xw_id in treelets[xv_id][2]:
+        #         right_indices[xv_id].append(index)
+        #         index += 1
+
+        #         xu_dense = dense_nodes[xu_id]
+        #         xw_dense = dense_nodes[xw_id]
+        #         xv_dense = dense_nodes[xv_id]
+        #         in_batch.append(torch.cat([xu_dense, xw_dense, xv_dense]))
+        #         ev[xv_id] += 1
+
+        # if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
+        #     if self.cuda_available:
+        #         right_sum = torch.zeros([len(G.nodes), 256]).cuda()
+        #     else:
+        #         right_sum = torch.zeros([len(G.nodes), 256])
+        #     for xv_id in G.nodes.keys():
+        #         right_indices[xv_id].append(xv_id)
+        # else:
+        #     in_batch = torch.stack(in_batch, dim = 0)
+        #     right_sum = self.FR(in_batch)
+
+        # # print("FR Output ", right_sum)
+
+
+        # # Add and then send to FP to update all the nodes!
+        # in_out_sum = []
+        # treelet_sum = []
+        # for xv_id in G.nodes.keys():
+        #     new_in_sum = torch.sum(in_sum[in_indices[xv_id], :], dim = 0)
+        #     new_out_sum = torch.sum(out_sum[out_indices[xv_id], :], dim = 0)
+
+        #     new_left_sum = torch.sum(left_sum[left_indices[xv_id], :], dim = 0)
+        #     new_head_sum = torch.sum(head_sum[head_indices[xv_id], :], dim = 0)
+        #     new_right_sum = torch.sum(right_sum[right_indices[xv_id], :], dim = 0)
+
+        #     # Append in_out_sum only if the number of summands is not zero. Else, append 0's.
+        #     temp = new_in_sum + new_out_sum
+        #     if len(temp.shape) != 0:
+        #         if dv[xv_id] == 0: # xv has 0 degree
+        #             if self.cuda_available:
+        #                 in_out_sum.append(torch.zeros(256).cuda())
+        #             else:
+        #                 in_out_sum.append(torch.zeros(256))
+        #         else:
+        #             in_out_sum.append(temp / dv[xv_id])
+        #     else:
+        #         if self.cuda_available:
+        #             in_out_sum.append(torch.zeros(256).cuda())
+        #         else:
+        #             in_out_sum.append(torch.zeros(256))
+
+        #     # Append treelet_sum only if the number of summands is not zero. Else, append 0's.
+        #     temp = new_left_sum + new_head_sum + new_right_sum
+        #     if len(temp.shape) != 0:
+        #         if ev[xv_id] == 0:
+        #             if self.cuda_available:
+        #                 treelet_sum.append(torch.zeros(256).cuda())
+        #             else:
+        #                 treelet_sum.append(torch.zeros(256))
+        #         else:
+        #             treelet_sum.append(temp / ev[xv_id])
+        #     else:
+        #         if self.cuda_available:
+        #             treelet_sum.append(torch.zeros(256).cuda())
+        #         else:
+        #             treelet_sum.append(torch.zeros(256))
+
+        # in_out_sum = torch.stack(in_out_sum, dim = 0)
+        # treelet_sum = torch.stack(treelet_sum, dim = 0)
         # try:
         # except:
         #     print(treelet_sum)
@@ -474,7 +564,8 @@ class FormulaNet(nn.Module):
         # print("FP Inputs ", dense_nodes, in_out_sum, treelet_sum)
 
         # Now Add and Send All nodes to FP
-        new_nodes = self.FP(dense_nodes + in_out_sum + treelet_sum)
+        # new_nodes = self.FP(dense_nodes + in_out_sum + treelet_sum)
+        new_nodes = self.FP(dense_nodes + in_out_sum) # This is for FormulaNet-Basic
 
         # print("FP Output ", new_nodes)
 
@@ -502,11 +593,24 @@ class FormulaNet(nn.Module):
             conjecture_graph (arr-like of Graph Objects): Inter-graph Batch of Conjectures
             statement_graph (same)
         """
-        conj_embedding_batch = []
-        state_embedding_batch = []
+        # conj_one_batch = []
+        # state_one_batch = []
+
+        inter_graph_conj_state_node_batch = []
+        conj_state_graphs = []
+
+        start_index = 0
+        conj_indices = {} # conj_index[i] = [first node in conjecture i, last node in conjecture i]
+        state_indices = {} # similar
         for i in range(len(conjecture_graphs)): # Iterate over inter-graph-batch.
             conjecture_graph = conjecture_graphs[i]
+            end_index = start_index + len(conjecture_graph.nodes)
+            conj_indices[i] = [start_index, end_index]
+
+            start_index = end_index
             statement_graph = statement_graphs[i]
+            end_index = start_index + len(conjecture_graph.nodes)
+            state_indices[i] = [start_index, end_index]
 
             # Map graph object to an array of one hot vectors
             conj_one_hot = self.graph_to_one_hot(conjecture_graph)
@@ -514,37 +618,45 @@ class FormulaNet(nn.Module):
 
             # Map one_hot vectors of full graph into dense vectors of full graph
             if torch.cuda.is_available():
-                conj_dense = torch.stack([self.dense_map(torch.Tensor(node).cuda()) for node in conj_one_hot])
-                state_dense = torch.stack([self.dense_map(torch.Tensor(node).cuda()) for node in state_one_hot])
+                conj_node_batch = torch.stack([torch.Tensor(node).cuda() for node in conj_one_hot])
+                state_node_batch = torch.stack([torch.Tensor(node).cuda() for node in state_one_hot])
             else:
-                conj_dense = torch.stack([self.dense_map(torch.Tensor(node)) for node in conj_one_hot])
-                state_dense = torch.stack([self.dense_map(torch.Tensor(node)) for node in state_one_hot])
+                conj_node_batch = torch.stack([torch.Tensor(node) for node in conj_one_hot])
+                state_node_batch = torch.stack([torch.Tensor(node) for node in state_one_hot])
 
+            conj_state_node_batch = torch.cat([conj_node_batch, state_node_batch], dim = 0)
+            inter_graph_conj_state_node_batch.append(conj_state_node_batch)
 
-            # Iterate equations 1 or 2.
-            for t in range(self.num_steps):
-                # print("Conjecture Dense: ", conj_dense)
-                # print("Statement Dense: ", state_dense)
-                conj_dense = self.fullPass(conj_dense, conjecture_graph)
-                state_dense = self.fullPass(state_dense, statement_graph)
-                # print("Conjecture Dense: ", conj_dense)
-                # print("Statement Dense: ", state_dense)
-                
+            conj_state_graphs.append(conjecture_graph)
+            conj_state_graphs.append(statement_graph)
 
-            # Finished Updating. max-pool over all nodes in the graph
-            conj_embedding = self.max_pool_dense_graph(conj_dense)
-            state_embedding = self.max_pool_dense_graph(state_dense)
-            # print(conj_embedding)
-            # print(state_embedding)
+        conj_state_graphs_batch = np.stack(conj_state_graphs)
+        inter_graph_conj_state_node_batch = torch.cat(inter_graph_conj_state_node_batch, dim = 0) # [:, 1909] Tensor (as if all nodes belonged to one huge graph)
+        conj_state_dense_batch = self.dense_map(inter_graph_conj_state_node_batch)
 
-            conj_embedding_batch.append(conj_embedding)
-            state_embedding_batch.append(state_embedding)
+        # Iterate equation 2.
+        for t in range(self.num_steps):
+            conj_state_dense = self.fullPass(conj_state_dense_batch, conj_state_graphs)
+            
+        # Finished Updating. max-pool over all nodes in the graph
 
-        conj_batch = torch.stack(conj_embedding_batch, dim = 0)
-        state_batch = torch.stack(state_embedding_batch, dim = 0)
+        # -------------------------- This will have to be modified ---------------------------- #
+        # max_pool across each relevant graph. For example, the first max-pool should be over the first 36 nodes.
+        conj_embeddings = []
+        state_embeddings = []
+        for i in range(len(conj_indices)):
+            conj_embeddings.append(self.max_pool_dense_graph(conj_state_dense[conj_indices[i][0] : conj_indices[i][1]]))
+            state_embeddings.append(self.max_pool_dense_graph(conj_state_dense[state_indices[i][0] : state_indices[i][1]]))
+
+        conj_embeddings = torch.stack(conj_embeddings)
+        state_embeddings = torch.stack(state_embeddings)
 
         # Classify
-        prediction = self.Classifier(conj_batch, state_batch)
+        # -------------------------- This will have to be modified ---------------------------- #
+        # Classify across each conjecture-state embeddings. (for example, each should take only 2 indices each.)
+        prediction = self.Classifier(conj_embeddings, state_embeddings)
+        # prediction = self.Classifier(conj_batch, state_batch)
+        # print(prediction)
 
         return prediction
 
