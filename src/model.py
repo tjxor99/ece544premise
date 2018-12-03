@@ -96,22 +96,6 @@ class FIClass(nn.Module):
         return x_batch
 
 
-class FOClass(nn.Module):
-    def __init__(self):
-        super(FOClass, self).__init__()
-        INPUT_DIM = 256 * 2
-        HL1 = HL2 = 256
-        self.fc1 = nn.Linear(INPUT_DIM, HL1)
-        self.bn1 = nn.BatchNorm1d(HL1)
-        self.fc2 = nn.Linear(HL1, HL2)
-        self.bn2 = nn.BatchNorm1d(HL2)
-
-    def forward(self, x_batch):
-        # Order is (batch, xv, xu)
-        x_batch = F.relu(self.bn1(self.fc1(x_batch)))
-        x_batch = F.relu(self.bn2(self.fc2(x_batch)))
-        return x_batch
-
 
 class FHClass(nn.Module):
     def __init__(self):
@@ -129,40 +113,6 @@ class FHClass(nn.Module):
         x_batch = F.relu(self.bn2(self.fc2(x_batch)))
         return x_batch
 
-class FLClass(nn.Module):
-    def __init__(self):
-        super(FLClass, self).__init__()
-        INPUT_DIM = 256 * 3
-        HL1 = HL2 = 256        
-        self.fc1 = nn.Linear(INPUT_DIM, HL1)
-        self.bn1 = nn.BatchNorm1d(HL1)
-        self.fc2 = nn.Linear(HL1, HL2)
-        self.bn2 = nn.BatchNorm1d(HL2)
-
-
-    def forward(self, x_batch):
-        # Order in xu, xv, xw
-        x_batch = F.relu(self.bn1(self.fc1(x_batch)))
-        x_batch = F.relu(self.bn2(self.fc2(x_batch)))
-        return x_batch
-
-
-class FRClass(nn.Module):
-    def __init__(self):
-        super(FRClass, self).__init__()
-        INPUT_DIM = 256 * 3
-        HL1 = HL2 = 256        
-        self.fc1 = nn.Linear(INPUT_DIM, HL1)
-        self.bn1 = nn.BatchNorm1d(HL1)
-        self.fc2 = nn.Linear(HL1, HL2)
-        self.bn2 = nn.BatchNorm1d(HL2)
-
-
-    def forward(self, x_batch):
-        # Order: batch, xu, xw, xv
-        x_batch = F.relu(self.bn1(self.fc1(x_batch)))
-        x_batch = F.relu(self.bn2(self.fc2(x_batch)))
-        return x_batch
 
 
 
@@ -218,12 +168,11 @@ class FormulaNet(nn.Module):
         self.dense_map = LinearMap(self.num_tokens) # maps one_hot -> 256 dimension vector
         self.FP = FPClass()
         self.FI = FIClass()
-        self.FO = FOClass()
-        self.FL = FLClass()
-        self.FR = FRClass()
+        self.FO = FIClass()
+        self.FL = FHClass()
+        self.FR = FHClass()
         self.FH = FHClass()
         self.Classifier = CondClassifier()
-        self.Softmax = nn.Softmax(dim = 1)
 
         self.max_pool_dense_graph = max_pool_dense_graph()
 
@@ -231,7 +180,7 @@ class FormulaNet(nn.Module):
         self.cuda_available = cuda_available
 
 
-    # Given a graph and all the functions, do one update in parallel for all nodes in the graph.
+    # Given graphs and all the functions, do one update in parallel for all nodes in the graph.
     def fullPass(self, dense_nodes, Gs):
         """
         @ Args:
@@ -280,6 +229,7 @@ class FormulaNet(nn.Module):
         right_index = 0
         right_batch = []
         right_indices = {}
+
         for G in Gs: # Inter-graph Batching.
             end_index = start_index + len(G.nodes)
 
@@ -289,7 +239,7 @@ class FormulaNet(nn.Module):
                 xv_id_offset = xv_id + start_index
                 xv_dense = dense_nodes[xv_id_offset]
 
-                in_indices[xv_id_offset] = []
+                in_indices[xv_id_offset] = [] # indices of in_batch corresponding to each (xu, xv) pair, forall xu
                 out_indices[xv_id_offset] = []
 
                 for xu_id in xv_obj.parents: # For FI
@@ -339,7 +289,7 @@ class FormulaNet(nn.Module):
                     head_batch.append(torch.cat([xu_dense, xv_dense, xw_dense]))
                     ev[xv_id_offset] += 1
 
-                # Right Treelet: (xv, xu, xw)
+                # Right Treelet: (xu, xw, xv)
                 right_indices[xv_id_offset] = []
                 for xu_id, xw_id, _ in treelets[xv_id][2]:
                     xu_id_offset = xu_id + start_index
@@ -407,12 +357,15 @@ class FormulaNet(nn.Module):
             right_sum = self.FR(right_batch)
 
 
+
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
 # Does assigning to in_out_sum and treelet_sum maintain the computation graph?
+# I'm assuming it does, since the elements in in_out_sum and treelet_sum are all Tensor objects.
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
         # Compute in_out_sum and treelet_sum to input into FP
+
         if self.cuda_available:
             in_out_sum = torch.empty(dense_nodes.shape).cuda() 
             treelet_sum = torch.empty(dense_nodes.shape).cuda()
@@ -450,13 +403,8 @@ class FormulaNet(nn.Module):
 
             start_index += len(G.nodes)
 
-        # print(dense_nodes)
-        # print(in_out_sum)
-        # print(treelet_sum)
         # Add and then send to FP to update all the nodes!
         new_nodes = self.FP(dense_nodes + in_out_sum + treelet_sum)
-
-        # print("FP Output ", new_nodes)
 
         return new_nodes
 

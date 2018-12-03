@@ -19,23 +19,12 @@ def Validate(num_datapoints):
 		statement = datapoint.statement
 		label = datapoint.label
 
-		# for node_id, node_obj in conjecture.nodes.items(): # Find and replace unknowns
-		# 	if node_obj.token not in tokens_to_index.keys(): # UNKOWN token
-		# 		node_obj.token = "UNKNOWN"
-
-		# for node_id, node_obj in statement.nodes.items():
-		# 	if node_obj.token not in tokens_to_index.keys():
-		# 		node_obj.token = "UNKNOWN"
-
 		prediction_val = F([conjecture], [statement])
 		_, prediction_label = torch.max(prediction_val, dim = 1)
 
 		if cuda_available:
 			prediction_label = prediction_label.cpu()
 		prediction_label = prediction_label.numpy()
-
-		# print(label)
-		# print(prediction_label)
 
 		if datapoint.label != prediction_label[0]:
 			err_count += 1
@@ -60,7 +49,7 @@ F = FormulaNet(1, cuda_available)
 # Load Model
 MODEL_DIR = os.path.join("..", "models")
 file_path = os.path.join(MODEL_DIR, 'last.pth.tar')
-utils.load_checkpoint(F, file_path)
+utils.load_checkpoint(F, file_path, cuda_available)
 # model_file = os.path.join(MODEL_DIR, "model.pt")
 
 
