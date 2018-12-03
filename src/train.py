@@ -165,7 +165,6 @@ for epoch in range(args.start_epoch, args.epochs):
 			curr_loss.backward()
 			opt.step()
 
-
 			batch_number += 1
 
 			batch_index = 0

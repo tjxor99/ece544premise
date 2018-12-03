@@ -42,9 +42,9 @@ class LinearMap(nn.Module):
     '''
     Map the one-hot vector to the x's corresponding to inputs of each neural network.
     '''
-    def __init__(self):
+    def __init__(self, INPUT_DIM = 1909):
         super(LinearMap, self).__init__()
-        INPUT_DIM = 1909
+        # INPUT_DIM = 1909
         HL1 = 256
         self.fc1 = nn.Linear(INPUT_DIM, HL1)
 
@@ -212,7 +212,10 @@ class FormulaNet(nn.Module):
     def __init__(self, num_steps, cuda_available = False):
         super(FormulaNet, self).__init__()
         # Initialize models
-        self.dense_map = LinearMap() # maps one_hot -> 256 dimension vector
+        self.token_to_index = get_token_dict_from_file()
+        self.num_tokens = len(self.token_to_index)
+
+        self.dense_map = LinearMap(self.num_tokens) # maps one_hot -> 256 dimension vector
         self.FP = FPClass()
         self.FI = FIClass()
         self.FO = FOClass()
@@ -225,8 +228,6 @@ class FormulaNet(nn.Module):
         self.max_pool_dense_graph = max_pool_dense_graph()
 
         self.num_steps = num_steps
-        self.token_to_index = get_token_dict_from_file()
-
         self.cuda_available = cuda_available
 
 
@@ -366,9 +367,9 @@ class FormulaNet(nn.Module):
         # Pass out_batch into FO
         if len(out_batch) <= 1: 
             if self.cuda_available:
-                in_sum = torch.zeros(dense_nodes.shape).cuda()
+                out_sum = torch.zeros(dense_nodes.shape).cuda()
             else:
-                in_sum = torch.zeros(dense_nodes.shape)
+                out_sum = torch.zeros(dense_nodes.shape)
         else:
             out_batch = torch.stack(out_batch, dim = 0)
             out_sum = self.FO(out_batch)
@@ -406,61 +407,47 @@ class FormulaNet(nn.Module):
             right_sum = self.FR(right_batch)
 
 
-        in_out_sum = []
-        treelet_sum = []
+        # Compute in_out_sum and treelet_sum to input into FP
+        if self.cuda_available:
+            in_out_sum = torch.zeros(dense_nodes.shape, requires_grad = True).cuda()
+            treelet_sum = torch.zeros(dense_nodes.shape, requires_grad = True).cuda()
+        else:
+            in_out_sum = torch.zeros(dense_nodes.shape, requires_grad = True)
+            treelet_sum = torch.zeros(dense_nodes.shape, requires_grad = True)
+
         start_index = 0
         for G in Gs:
             end_index = start_index + len(G.nodes)
             for xv_id in G.nodes.keys():
                 xv_id_offset = xv_id + start_index
+
                 new_in_sum = torch.sum(in_sum[in_indices[xv_id_offset], :], dim = 0)
                 new_out_sum = torch.sum(out_sum[out_indices[xv_id_offset], :], dim = 0)
+                if dv[xv_id_offset] == 0:
+                    if self.cuda_available:
+                        in_out_sum[xv_id_offset] = torch.zeros(256).cuda()
+                    else:
+                        in_out_sum[xv_id_offset] = torch.zeros(256)
+                else:
+                    in_out_sum[xv_id_offset] = (new_in_sum + new_out_sum) / dv[xv_id_offset]
 
                 new_left_sum = torch.sum(left_sum[left_indices[xv_id_offset], :], dim = 0)
                 new_head_sum = torch.sum(head_sum[head_indices[xv_id_offset], :], dim = 0)
                 new_right_sum = torch.sum(right_sum[right_indices[xv_id_offset], :], dim = 0)
 
-                # Append in_out_sum only if the number of summands is not zero. Else, append 0's.
-                temp = new_in_sum + new_out_sum
-                if len(temp.shape) != 0:
-                    if dv[xv_id_offset] == 0: # xv has 0 degree
-                        if self.cuda_available:
-                            in_out_sum.append(torch.zeros(256).cuda())
-                        else:
-                            in_out_sum.append(torch.zeros(256))
-                    else:
-                        in_out_sum.append(temp / dv[xv_id_offset])
-                else:
+                if ev[xv_id_offset] == 0:
                     if self.cuda_available:
-                        in_out_sum.append(torch.zeros(256).cuda())
+                        treelet_sum[xv_id_offset] = torch.zeros(256).cuda()
                     else:
-                        in_out_sum.append(torch.zeros(256))
-
-                # Treelet sum
-                temp = new_left_sum + new_head_sum + new_right_sum
-                if len(temp.shape) != 0:
-                    if ev[xv_id_offset] == 0:
-                        if self.cuda_available:
-                            treelet_sum.append(torch.zeros(256).cuda())
-                        else:
-                            treelet_sum.append(torch.zeros(256))
-                    else:
-                        treelet_sum.append(temp / ev[xv_id_offset])
+                        treelet_sum[xv_id_offset] = torch.zeros(256)
                 else:
-                    if self.cuda_available:
-                        treelet_sum.append(torch.zeros(256).cuda())
-                    else:
-                        treelet_sum.append(torch.zeros(256))
+                    treelet_sum[xv_id_offset] = (new_left_sum + new_head_sum + new_right_sum) / ev[xv_id_offset]
 
             start_index += len(G.nodes)
-        in_out_sum = torch.stack(in_out_sum, dim = 0)
-        treelet_sum = torch.stack(treelet_sum, dim = 0)
-
 
 
         # Add and then send to FP to update all the nodes!
         new_nodes = self.FP(dense_nodes + in_out_sum + treelet_sum)
-        # new_nodes = self.FP(dense_nodes + in_out_sum) # This is for FormulaNet-Basic
 
         # print("FP Output ", new_nodes)
 
@@ -470,7 +457,7 @@ class FormulaNet(nn.Module):
         """
         Given a graph object, return an array of one-hot vectors.
         """
-        NUM_TOKENS = 1909
+        NUM_TOKENS = self.num_tokens
         one_hot_graph = []
         for _, node in G.nodes.items():
             token = node.token
