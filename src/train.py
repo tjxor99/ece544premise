@@ -25,13 +25,13 @@ def Validate(num_datapoints):
 		statement = datapoint.statement
 		label = datapoint.label
 
-		for node_id, node_obj in conjecture.nodes.items(): # Find and replace unknowns
-			if node_obj.token not in tokens_to_index.keys(): # UNKOWN token
-				node_obj.token = "UNKNOWN"
+		# for node_id, node_obj in conjecture.nodes.items(): # Find and replace unknowns
+		# 	if node_obj.token not in tokens_to_index.keys(): # UNKOWN token
+		# 		node_obj.token = "UNKNOWN"
 
-		for node_id, node_obj in statement.nodes.items():
-			if node_obj.token not in tokens_to_index.keys():
-				node_obj.token = "UNKNOWN"
+		# for node_id, node_obj in statement.nodes.items():
+		# 	if node_obj.token not in tokens_to_index.keys():
+		# 		node_obj.token = "UNKNOWN"
 
 		prediction_val = F([conjecture], [statement])
 		_, prediction_label = torch.max(prediction_val, dim = 1)
@@ -164,6 +164,7 @@ for epoch in range(args.start_epoch, args.epochs):
 			# Backpropogation.
 			curr_loss.backward()
 			opt.step()
+
 
 			batch_number += 1
 

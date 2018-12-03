@@ -474,6 +474,8 @@ class FormulaNet(nn.Module):
         one_hot_graph = []
         for _, node in G.nodes.items():
             token = node.token
+            if token not in self.token_to_index:
+                token = "UNKNOWN"
             token_index = self.token_to_index[token]
             one_hot_token = np.zeros(NUM_TOKENS)
             one_hot_token[token_index] = 1
@@ -547,8 +549,6 @@ class FormulaNet(nn.Module):
         # -------------------------- This will have to be modified ---------------------------- #
         # Classify across each conjecture-state embeddings. (for example, each should take only 2 indices each.)
         prediction = self.Classifier(conj_embeddings, state_embeddings)
-        # prediction = self.Classifier(conj_batch, state_batch)
-        # print(prediction)
 
         return prediction
 
