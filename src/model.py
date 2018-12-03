@@ -279,7 +279,7 @@ class FormulaNet(nn.Module):
         right_index = 0
         right_batch = []
         right_indices = {}
-        for G in Gs:
+        for G in Gs: # Inter-graph Batching.
             end_index = start_index + len(G.nodes)
 
             treelets = treelet_funct(G) # Treelets for this graph.
@@ -309,7 +309,7 @@ class FormulaNet(nn.Module):
                     out_batch.append(torch.cat([xv_dense, xu_dense], dim = 0))
                     dv[xv_id_offset] += 1
 
-                # Iterate over treelets
+                # ----------------------- Iterate over treelets ----------------------- #
                 # Left Treelet: (xv, xu, xw)
                 left_indices[xv_id_offset] = []
                 for _, xu_id, xw_id in treelets[xv_id][0]:
@@ -488,9 +488,6 @@ class FormulaNet(nn.Module):
             conjecture_graph (arr-like of Graph Objects): Inter-graph Batch of Conjectures
             statement_graph (same)
         """
-        # conj_one_batch = []
-        # state_one_batch = []
-
         inter_graph_conj_state_node_batch = []
         conj_state_graphs = []
 
@@ -504,7 +501,7 @@ class FormulaNet(nn.Module):
 
             start_index = end_index
             statement_graph = statement_graphs[i]
-            end_index = start_index + len(conjecture_graph.nodes)
+            end_index = start_index + len(statement_graph.nodes)
             state_indices[i] = [start_index, end_index]
 
             # Map graph object to an array of one hot vectors
