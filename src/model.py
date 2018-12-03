@@ -407,13 +407,18 @@ class FormulaNet(nn.Module):
             right_sum = self.FR(right_batch)
 
 
+# ----------------------------------------------------------------------------- #
+# ----------------------------------------------------------------------------- #
+# Does assigning to in_out_sum and treelet_sum maintain the computation graph?
+# ----------------------------------------------------------------------------- #
+# ----------------------------------------------------------------------------- #
         # Compute in_out_sum and treelet_sum to input into FP
         if self.cuda_available:
-            in_out_sum = torch.zeros(dense_nodes.shape, requires_grad = True).cuda()
-            treelet_sum = torch.zeros(dense_nodes.shape, requires_grad = True).cuda()
+            in_out_sum = torch.empty(dense_nodes.shape).cuda() 
+            treelet_sum = torch.empty(dense_nodes.shape).cuda()
         else:
-            in_out_sum = torch.zeros(dense_nodes.shape, requires_grad = True)
-            treelet_sum = torch.zeros(dense_nodes.shape, requires_grad = True)
+            in_out_sum = torch.empty(dense_nodes.shape)
+            treelet_sum = torch.empty(dense_nodes.shape)
 
         start_index = 0
         for G in Gs:
@@ -445,7 +450,9 @@ class FormulaNet(nn.Module):
 
             start_index += len(G.nodes)
 
-
+        # print(dense_nodes)
+        # print(in_out_sum)
+        # print(treelet_sum)
         # Add and then send to FP to update all the nodes!
         new_nodes = self.FP(dense_nodes + in_out_sum + treelet_sum)
 
