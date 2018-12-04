@@ -306,6 +306,7 @@ class FormulaNet(nn.Module):
             start_index += len(G.nodes)
 
         if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
+            # print(1)
             if self.cuda_available:
                 in_sum = torch.zeros(dense_nodes.shape).cuda()
             else:
@@ -316,6 +317,7 @@ class FormulaNet(nn.Module):
 
         # Pass out_batch into FO
         if len(out_batch) <= 1: 
+            # print(2)
             if self.cuda_available:
                 out_sum = torch.zeros(dense_nodes.shape).cuda()
             else:
@@ -326,6 +328,7 @@ class FormulaNet(nn.Module):
 
         # Left Treelet
         if len(left_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
+            # print(3)
             if self.cuda_available:
                 left_sum = torch.zeros(dense_nodes.shape).cuda()
             else:
@@ -337,6 +340,7 @@ class FormulaNet(nn.Module):
 
         # Head Treelet
         if len(head_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
+            # print(4)
             if self.cuda_available:
                 head_sum = torch.zeros(dense_nodes.shape).cuda()
             else:
@@ -348,6 +352,7 @@ class FormulaNet(nn.Module):
 
         # Right Treelet
         if len(right_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
+            # print(5)
             if self.cuda_available:
                 right_sum = torch.zeros(dense_nodes.shape).cuda()
             else:
