@@ -144,11 +144,9 @@ for epoch in range(args.start_epoch, args.epochs):
 
 		# Start Training! Skip if batch size is 1 or les.
 		else:
-			if len(label_batch) <= 1:
-				break
-				
+			opt.zero_grad() # Delete stored gradients before doing forward-backward
+
 			# Forward
-			opt.zero_grad()
 			predict_val = F(conjecture_state_batch)
 
 			if cuda_available:

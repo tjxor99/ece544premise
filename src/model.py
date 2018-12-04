@@ -379,19 +379,15 @@ class FormulaNet(nn.Module):
             for xv_id in G.nodes.keys():
                 xv_id_offset = xv_id + start_index
 
-                new_in_sum = torch.sum(in_sum[in_indices[xv_id_offset], :], dim = 0)
-                new_out_sum = torch.sum(out_sum[out_indices[xv_id_offset], :], dim = 0)
                 if dv[xv_id_offset] == 0:
                     if self.cuda_available:
                         in_out_sum[xv_id_offset] = torch.zeros(256).cuda()
                     else:
                         in_out_sum[xv_id_offset] = torch.zeros(256)
                 else:
+                    new_in_sum = torch.sum(in_sum[in_indices[xv_id_offset], :], dim = 0)
+                    new_out_sum = torch.sum(out_sum[out_indices[xv_id_offset], :], dim = 0)
                     in_out_sum[xv_id_offset] = (new_in_sum + new_out_sum) / dv[xv_id_offset]
-
-                new_left_sum = torch.sum(left_sum[left_indices[xv_id_offset], :], dim = 0)
-                new_head_sum = torch.sum(head_sum[head_indices[xv_id_offset], :], dim = 0)
-                new_right_sum = torch.sum(right_sum[right_indices[xv_id_offset], :], dim = 0)
 
                 if ev[xv_id_offset] == 0:
                     if self.cuda_available:
@@ -399,6 +395,9 @@ class FormulaNet(nn.Module):
                     else:
                         treelet_sum[xv_id_offset] = torch.zeros(256)
                 else:
+                    new_left_sum = torch.sum(left_sum[left_indices[xv_id_offset], :], dim = 0)
+                    new_head_sum = torch.sum(head_sum[head_indices[xv_id_offset], :], dim = 0)
+                    new_right_sum = torch.sum(right_sum[right_indices[xv_id_offset], :], dim = 0)
                     treelet_sum[xv_id_offset] = (new_left_sum + new_head_sum + new_right_sum) / ev[xv_id_offset]
 
             start_index += len(G.nodes)
@@ -413,18 +412,20 @@ class FormulaNet(nn.Module):
         Given a graph object, return an array of one-hot vectors.
         """
         NUM_TOKENS = self.num_tokens
-        one_hot_graph = []
+        if self.cuda_available:
+            one_hot_graph = torch.zeros((len(G.nodes), NUM_TOKENS)).cuda()
+        else:
+            one_hot_graph = torch.zeros((len(G.nodes), NUM_TOKENS))
+
+        index = 0
         for _, node in G.nodes.items():
             token = node.token
             if token not in self.token_to_index:
                 token = "UNKNOWN"
             token_index = self.token_to_index[token]
-            one_hot_token = np.zeros(NUM_TOKENS)
-            one_hot_token[token_index] = 1
-            one_hot_graph.append(one_hot_token)
-        one_hot_graph = np.array(one_hot_graph)
-        return one_hot_graph
 
+            one_hot_graph[index, token_index] = 1
+        return one_hot_graph
 
     def forward(self, conjecture_state_graphs):
         """
@@ -452,27 +453,18 @@ class FormulaNet(nn.Module):
             conj_one_hot = self.graph_to_one_hot(conjecture_graph)
             state_one_hot = self.graph_to_one_hot(statement_graph)
 
-            # Map one_hot vectors of full graph into dense vectors of full graph
-            if torch.cuda.is_available():
-                conj_node_batch = torch.stack([torch.Tensor(node).cuda() for node in conj_one_hot])
-                state_node_batch = torch.stack([torch.Tensor(node).cuda() for node in state_one_hot])
-            else:
-                conj_node_batch = torch.stack([torch.Tensor(node) for node in conj_one_hot])
-                state_node_batch = torch.stack([torch.Tensor(node) for node in state_one_hot])
-
-            conj_state_node_batch = torch.cat([conj_node_batch, state_node_batch], dim = 0)
+            conj_state_node_batch = torch.cat([conj_one_hot, state_one_hot], dim = 0)
             inter_graph_conj_state_node_batch.append(conj_state_node_batch)
 
             conj_state_graphs.append(conjecture_graph)
             conj_state_graphs.append(statement_graph)
 
-        conj_state_graphs_batch = np.stack(conj_state_graphs)
         inter_graph_conj_state_node_batch = torch.cat(inter_graph_conj_state_node_batch, dim = 0) # [:, 1909] Tensor (as if all nodes belonged to one huge graph)
         conj_state_dense_batch = self.dense_map(inter_graph_conj_state_node_batch)
 
         # Iterate equation 2.
         for t in range(self.num_steps):
-            conj_state_dense = self.fullPass(conj_state_dense_batch, conj_state_graphs)
+            conj_state_dense_batch = self.fullPass(conj_state_dense_batch, conj_state_graphs)
             
         # Finished Updating. max-pool over all nodes in the graph
 
@@ -481,8 +473,8 @@ class FormulaNet(nn.Module):
         conj_embeddings = []
         state_embeddings = []
         for i in range(len(conj_indices)):
-            conj_embeddings.append(self.max_pool_dense_graph(conj_state_dense[conj_indices[i][0] : conj_indices[i][1]]))
-            state_embeddings.append(self.max_pool_dense_graph(conj_state_dense[state_indices[i][0] : state_indices[i][1]]))
+            conj_embeddings.append(self.max_pool_dense_graph(conj_state_dense_batch[conj_indices[i][0] : conj_indices[i][1]]))
+            state_embeddings.append(self.max_pool_dense_graph(conj_state_dense_batch[state_indices[i][0] : state_indices[i][1]]))
 
         conj_embeddings = torch.stack(conj_embeddings)
         state_embeddings = torch.stack(state_embeddings)
