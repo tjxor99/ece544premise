@@ -390,6 +390,7 @@ class FormulaNet(nn.Module):
         start_index = 0
         for G in Gs:
             end_index = start_index + len(G.nodes)
+
             for xv_id in G.nodes.keys():
                 xv_id_offset = xv_id + start_index
 

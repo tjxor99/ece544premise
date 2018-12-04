@@ -19,7 +19,7 @@ def Validate(num_datapoints):
 		statement = datapoint.statement
 		label = datapoint.label
 
-		prediction_val = F([conjecture], [statement])
+		prediction_val = F([conjecture, statement])
 		_, prediction_label = torch.max(prediction_val, dim = 1)
 
 		if cuda_available:
