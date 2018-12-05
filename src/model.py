@@ -146,6 +146,7 @@ class max_pool_dense_graph(nn.Module):
         self.pool = nn.MaxPool1d(2)
 
     def forward(self, G_dense):
+        # print(G_dense.shape)
         x1 = G_dense[0]
         x1.unsqueeze_(0)
         for x2 in G_dense:
@@ -156,6 +157,17 @@ class max_pool_dense_graph(nn.Module):
             x1.squeeze_(2)
         x1.squeeze_(0)
         return x1
+
+
+class max_pool_dense_graph_var_inputs():
+    def __init__(self):
+        pass
+
+    def __call__(self, G_dense):        
+        maxed, _ = torch.max(G_dense, dim = 0)
+        return maxed
+
+
 
 
 class FormulaNet(nn.Module):
@@ -174,7 +186,8 @@ class FormulaNet(nn.Module):
         # self.FH = FHClass()
         self.Classifier = CondClassifier()
 
-        self.max_pool_dense_graph = max_pool_dense_graph()
+        # self.max_pool_dense_graph = max_pool_dense_graph()
+        self.max_pool_dense_graph = max_pool_dense_graph_var_inputs()
 
         self.num_steps = num_steps
         self.cuda_available = cuda_available
