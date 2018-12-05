@@ -163,7 +163,10 @@ class max_pool_dense_graph_var_inputs():
     def __init__(self):
         pass
 
-    def __call__(self, G_dense):        
+    def __call__(self, G_dense):   
+        # if G_dense.shape[0] == 36:
+        #     assert True is False
+        # print(1)
         maxed, _ = torch.max(G_dense, dim = 0)
         return maxed
 

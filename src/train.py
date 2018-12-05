@@ -1,6 +1,7 @@
 import argparse
 import os
-import pdb
+# import pdb
+# import time
 
 
 import numpy as np
@@ -113,7 +114,7 @@ for epoch in range(args.start_epoch, args.epochs):
 	label_batch = []
 
 	for datapoint in train_dataset():
-		if batch_number < args.start_batch: # Get to starting batch train dataset.
+		if batch_number < args.start_batch - 1: # Get to starting batch train dataset.
 			batch_index += 1
 			if batch_index < args.batch_size:
 				continue
@@ -125,6 +126,11 @@ for epoch in range(args.start_epoch, args.epochs):
 		conjecture_graph = datapoint.conjecture
 		statement_graph = datapoint.statement
 		label = label_to_one_hot(datapoint.label)
+
+# # here
+# 		if (batch_index == 0):
+# 			print len(conjecture_graph.nodes)
+# # here
 
 		conjecture_state_batch.append([conjecture_graph, statement_graph])
 		label_batch.append(label)
