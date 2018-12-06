@@ -114,7 +114,7 @@ for epoch in range(args.start_epoch, args.epochs):
 	label_batch = []
 
 	for datapoint in train_dataset():
-		if (args.start_epoch > 0) and (epoch == args.start_epoch) and (batch_number < args.start_batch - 1): # Get to starting batch train dataset.
+		if (epoch == args.start_epoch) and (batch_number < args.start_batch - 1): # Get to starting batch train dataset.
 			batch_index += 1
 			if batch_index < args.batch_size:
 				continue
