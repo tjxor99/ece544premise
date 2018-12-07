@@ -46,7 +46,8 @@ def Validate(num_datapoints):
 
 cuda_available = torch.cuda.is_available()
 
-F = FormulaNet(1, cuda_available)
+num_steps = int(input("Number of Update Iterations"))
+F = FormulaNet(num_steps, cuda_available)
 
 # Load Model
 MODEL_DIR = os.path.join("..", "models")

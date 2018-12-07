@@ -168,7 +168,7 @@ for epoch in range(args.start_epoch, args.epochs):
 				print("Trained %d Batches" %batch_number)
 				print("Train Loss", curr_loss)
 		
-			if (batch_number > 0) and (batch_number % 100 == 0):
+			if (batch_number > 0) and (batch_number % 1000 == 0):
 				state_dict = {'epoch:': epoch + 1, 
 							  'state_dict': F.state_dict(), 
 							  'optim_dict': opt.state_dict()}
