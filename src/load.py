@@ -36,8 +36,8 @@ def Validate(num_datapoints):
 		if count % 100 == 0:
 			print("Count: ",count)
 
-		if count == num_datapoints:
-			break
+		# if count == num_datapoints:
+		# 	break
 
 	print("Fraction of Incorrect Validations: ", err_count / count)
 
@@ -46,7 +46,7 @@ def Validate(num_datapoints):
 
 cuda_available = torch.cuda.is_available()
 
-num_steps = int(input("Number of Update Iterations"))
+num_steps = int(input("Number of Update Iterations:\n"))
 F = FormulaNet(num_steps, cuda_available)
 
 # Load Model
