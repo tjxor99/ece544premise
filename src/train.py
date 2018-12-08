@@ -198,7 +198,7 @@ for epoch in range(args.start_epoch, args.epochs):
 
 	# Validate Model after Each Epoch
 	F.eval()
-	val_err = Validate(2000)
+	val_err = Validate()
 
 	F.train()
 

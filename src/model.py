@@ -208,6 +208,7 @@ class FormulaNet(nn.Module):
 
         @ Vars:
             in_batch (list): Whatever will be fed into FI, FO, ... FR
+            in_indices (dict): indices of in_batch corresponding to each (xu, xv) pair, forall xu
             dv (Tensor): dv[xv] for each xv
             ev (Tensor): ev[xv] for each xv
             <Neural Function>_indices (dict): {xv: [index of in_batch]} to be used to for summands in update equation (indices of in_sum).
@@ -247,18 +248,20 @@ class FormulaNet(nn.Module):
         # right_batch = []
         # right_indices = {}
 
+        in_index_begin = 0 # NEW
+        out_index_begin = 0
         for G in Gs: # Inter-graph Batching.
             end_index = start_index + len(G.nodes)
 
             # treelets = treelet_funct(G) # Treelets for this graph.
 
-            in_index_begin = 0
-            out_index_begin = 0
+            # in_index_begin = 0 # OLD
+            # out_index_begin = 0
             for xv_id, xv_obj in G.nodes.items():
                 xv_id_offset = xv_id + start_index
                 xv_dense = dense_nodes[xv_id_offset]
 
-                # in_indices[xv_id_offset] = [] # indices of in_batch corresponding to each (xu, xv) pair, forall xu
+                # in_indices[xv_id_offset] = [] # 
 
                 if len(xv_obj.parents) > 0:
                     xv_obj.parents = np.array(xv_obj.parents)
@@ -286,6 +289,7 @@ class FormulaNet(nn.Module):
                 else:
                     out_indices[xv_id_offset] = np.array([])
                     dv[xv_id_offset] += 0
+
 
                 # # ----------------------- Iterate over treelets ----------------------- #
                 # # Left Treelet: (xv, xu, xw)
@@ -331,6 +335,7 @@ class FormulaNet(nn.Module):
                 #     ev[xv_id_offset] += 1
 
             start_index += len(G.nodes)
+
 
         # Pass in_batch into FI
         if len(in_batch) <= 1: # When the batch size is 1, we can't do batch normalization. Skip
