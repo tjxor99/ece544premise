@@ -62,7 +62,7 @@ def label_to_one_hot(y):
 parser = argparse.ArgumentParser()
 parser.add_argument('--batch_size', type = int, default = 32, help = 'Batch Size')
 parser.add_argument('--epochs', type = int, default = 5, help = 'Number of training episodes')
-parser.add_argument('--num_steps', type = int, default = 1, help = 'Number of update steps for equation 1 or 2')
+parser.add_argument('--num_steps', type = int, default = 0, help = 'Number of update steps for equation 1 or 2')
 parser.add_argument('--lr', type = float, default = 1e-3, help = 'Initial learning rate for RMSProp')
 parser.add_argument('--weight_decay', type = float, default = 1e-4, help = "Weight decay parameter for RMSProp")
 parser.add_argument('--lr_decay', type = float, default = 3., help = 'Multiplicative Factor by which to decay learning rate by after each epoch, > 1')
@@ -127,10 +127,9 @@ for epoch in range(args.start_epoch, args.epochs):
 		statement_graph = datapoint.statement
 		label = label_to_one_hot(datapoint.label)
 
-# # here
-# 		if (batch_index == 0):
-# 			print len(conjecture_graph.nodes)
-# # here
+
+		# print("Conj Size: ", len(conjecture_graph.nodes))
+		# print("Statement Size: ", len(statement_graph.nodes))
 
 		conjecture_state_batch.append([conjecture_graph, statement_graph])
 		label_batch.append(label)

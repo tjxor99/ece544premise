@@ -482,6 +482,8 @@ class FormulaNet(nn.Module):
             end_index = start_index + len(statement_graph.nodes)
             state_indices[i] = [start_index, end_index]
 
+            start_index = end_index
+
             # Map graph object to an array of one hot vectors
             conj_one_hot = self.graph_to_one_hot(conjecture_graph)
             state_one_hot = self.graph_to_one_hot(statement_graph)
@@ -491,6 +493,8 @@ class FormulaNet(nn.Module):
 
             conj_state_graphs.append(conjecture_graph)
             conj_state_graphs.append(statement_graph)
+        # print("Conj Indices: ",conj_indices)
+        # print("State Indices: ", state_indices)
 
         inter_graph_conj_state_node_batch = torch.cat(inter_graph_conj_state_node_batch, dim = 0) # [:, 1909] Tensor (as if all nodes belonged to one huge graph)
         conj_state_dense_batch = self.dense_map(inter_graph_conj_state_node_batch)
