@@ -47,9 +47,10 @@ class LinearMap(nn.Module):
         # INPUT_DIM = 1909
         HL1 = 256
         self.fc1 = nn.Linear(INPUT_DIM, HL1)
+        self.bn1 = nn.BatchNorm1d(HL1)
 
     def forward(self, x):
-        return self.fc1(x)
+        return F.relu(self.bn1(self.fc1(x)))
 
 
 
