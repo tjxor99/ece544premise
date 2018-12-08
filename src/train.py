@@ -75,6 +75,8 @@ parser.add_argument('--load', type = bool, default = False, help = 'True to load
 args = parser.parse_args()
 print(args)
 
+input("Is the saving directory okay, and are you loading the model if necessary?")
+
 MODEL_DIR = os.path.join("..", "models")
 # MODEL_DIR = os.path.join("..", "models2")
 
