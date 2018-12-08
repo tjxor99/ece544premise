@@ -9,7 +9,8 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-from model import *
+from model import FormulaNet
+# from model2 import FormulaNet
 import utils
 
 from dataset import train_dataset, test_dataset, validation_dataset, get_token_dict_from_file
@@ -75,6 +76,7 @@ args = parser.parse_args()
 print(args)
 
 MODEL_DIR = os.path.join("..", "models")
+# MODEL_DIR = os.path.join("..", "models2")
 
 cuda_available = torch.cuda.is_available()
 
