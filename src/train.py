@@ -87,7 +87,7 @@ opt = torch.optim.RMSprop(F.parameters(), lr = args.lr, alpha = args.weight_deca
 
 if args.load is True:
 	file_path = os.path.join(MODEL_DIR, 'last.pth.tar')
-	utils.load_checkpoint(F, file_path, opt)
+	utils.load_checkpoint(F, file_path, cuda_available, opt)
 
 else: # When not loading, make sure cuda is enabled.
 	if cuda_available: 

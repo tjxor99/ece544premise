@@ -4,7 +4,7 @@ import torch.nn as nn
 
 import numpy as np
 from model import FormulaNet
-from dataset import validation_dataset, get_token_dict_from_file
+from dataset import validation_dataset, get_token_dict_from_file, test_dataset
 import os
 
 
@@ -14,7 +14,8 @@ def Validate(num_datapoints):
 
 	err_count = 0
 	count = 0
-	for datapoint in validation_dataset():
+	# for datapoint in validation_dataset():
+	for datapoint in test_dataset():
 		conjecture = datapoint.conjecture
 		statement = datapoint.statement
 		label = datapoint.label
@@ -63,6 +64,6 @@ utils.load_checkpoint(F, file_path, cuda_available)
 F.eval()
 
 print("Model Loaded!")
-err_fract = Validate(10000)
+err_fract = Validate(5000)
 
 print("Validation Error: ", err_fract)
