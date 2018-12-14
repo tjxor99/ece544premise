@@ -37,8 +37,8 @@ def Validate(num_datapoints):
 		if count % 100 == 0:
 			print("Count: ",count)
 
-		# if count == num_datapoints:
-		# 	break
+#		if count == num_datapoints:
+#			break
 
 	print("Fraction of Incorrect Validations: ", err_count / count)
 
@@ -51,6 +51,7 @@ num_steps = int(input("Number of Update Iterations:\n"))
 F = FormulaNet(num_steps, cuda_available)
 
 # Load Model
+# MODEL_DIR = os.path.join("..", "models")
 MODEL_DIR = os.path.join("..", "models2")
 file_path = os.path.join(MODEL_DIR, 'last.pth.tar')
 utils.load_checkpoint(F, file_path, cuda_available)

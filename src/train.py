@@ -44,8 +44,8 @@ def Validate(num_datapoints):
 		if count % 100 == 0:
 			print("Count: ",count)
 
-		if count == num_datapoints:
-			break
+#		if count == num_datapoints:
+#			break
 
 	print("Fraction of Incorrect Validations: ", err_count / count)
 
@@ -75,10 +75,9 @@ parser.add_argument('--load', type = bool, default = False, help = 'True to load
 args = parser.parse_args()
 print(args)
 
-input("Is the saving directory okay, and are you loading the model if necessary?")
 
-#MODEL_DIR = os.path.join("..", "models")
-MODEL_DIR = os.path.join("..", "models4")
+MODEL_DIR = os.path.join("..", "models2")
+input("Is the saving directory okay, and are you loading the model if necessary?")
 
 cuda_available = torch.cuda.is_available()
 
@@ -198,7 +197,7 @@ for epoch in range(args.start_epoch, args.epochs):
 
 	# Validate Model after Each Epoch
 	F.eval()
-	val_err = Validate()
+	val_err = Validate(0)
 
 	F.train()
 
