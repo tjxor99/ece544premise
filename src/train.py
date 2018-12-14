@@ -1,8 +1,5 @@
 import argparse
 import os
-# import pdb
-# import time
-
 
 import numpy as np
 import torch
@@ -14,10 +11,9 @@ from model import FormulaNet
 import utils
 
 from dataset import train_dataset, test_dataset, validation_dataset, get_token_dict_from_file
-# from test import Validate
 
-# os.makedirs('models', True) # Directory to save / load models
 def Validate(num_datapoints):
+	# To validate the current model after each epoch.
 	tokens_to_index = get_token_dict_from_file()
 
 	err_count = 0
@@ -70,6 +66,7 @@ parser.add_argument('--lr_decay', type = float, default = 3., help = 'Multiplica
 parser.add_argument('--start_epoch', type = int, default = 0, help = 'Epoch to resume with')
 parser.add_argument('--start_batch', type = int, default = 0, help = 'Batch Number to resume with')
 parser.add_argument('--load', type = bool, default = False, help = 'True to load model')
+parser.add_argument('--model_path', type = bool, default = None, help = '.pth.tar file to save the model and optimizer. Default is ../models/last.pth.tar')
 
 
 args = parser.parse_args()
@@ -88,6 +85,8 @@ opt = torch.optim.RMSprop(F.parameters(), lr = args.lr, alpha = args.weight_deca
 
 if args.load is True:
 	file_path = os.path.join(MODEL_DIR, 'last.pth.tar')
+	if args.model_path:
+		file_path = args.model_path
 	utils.load_checkpoint(F, file_path, cuda_available, opt)
 
 else: # When not loading, make sure cuda is enabled.
@@ -102,22 +101,28 @@ F.train()
 
 
 # Loss Function
-loss = nn.BCEWithLogitsLoss() # Binary Cross-Entropy Loss
+loss = nn.BCEWithLogitsLoss() # Binary Cross-Entropy Loss with sigmoid attached in front.
 
 
 """ 
+==============================================
 Begin Training
+==============================================
 """
 lr = args.lr
 for epoch in range(args.start_epoch, args.epochs):
-	# I will assume the graphs are shuffled somehow.
-	batch_index = 0
+	# I will assume the graphs are shuffled somehow when calling train_dataset().
+
+	batch_index = 0 # More like batch counter, counting the number of distinct (conjecutre, statement) pairs are stored.
 	batch_number = 0 # Number of batches iterated.
 	conjecture_state_batch = []
 	label_batch = []
 
-	for datapoint in train_dataset():
-		if (epoch == args.start_epoch) and (batch_number < args.start_batch - 1): # Get to starting batch train dataset.
+	for datapoint in train_dataset(): 
+		# Collect datapoints for inter-graph batching.
+
+		if (epoch == args.start_epoch) and (batch_number < args.start_batch - 1): 
+			# If starting from a saved <start_epoch> and <start_batch>, pass through prior datapoints.
 			batch_index += 1
 			if batch_index < args.batch_size:
 				continue
@@ -137,8 +142,9 @@ for epoch in range(args.start_epoch, args.epochs):
 			batch_index += 1
 			continue
 
-		# Start Training! Skip if batch size is 1 or les.
 		else:
+			# Start Training! 
+
 			opt.zero_grad() # Delete stored gradients before doing forward-backward
 
 			# Forward
@@ -158,6 +164,7 @@ for epoch in range(args.start_epoch, args.epochs):
 
 			batch_number += 1
 
+			# Reset batch.
 			batch_index = 0
 			conjecture_state_batch = []
 			label_batch = []
@@ -167,6 +174,7 @@ for epoch in range(args.start_epoch, args.epochs):
 				print("Train Loss", curr_loss)
 		
 			if (batch_number > 0) and (batch_number % 1000 == 0):
+				# Save model, optimizer, and epcoh # every 1000 batches.
 				state_dict = {'epoch:': epoch + 1, 
 							  'state_dict': F.state_dict(), 
 							  'optim_dict': opt.state_dict()}

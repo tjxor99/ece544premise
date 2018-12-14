@@ -28,7 +28,9 @@ OPERATORS = {
 }  # Using the set of operators from FormulaNet, plus the quantifiers
 
 class Graph:
-
+    """
+    Graph embedded object of a raw HolStep conjecture or statement, with each node represented as a token.
+    """
     def __init__(self):
         self.nodes = {}
         self.root = None

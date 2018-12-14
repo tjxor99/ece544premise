@@ -1,3 +1,8 @@
+"""
+File copied from Stanford CS 221 github code on saving pytorch model and optimizer.
+"""
+
+
 import json
 import logging
 import os
