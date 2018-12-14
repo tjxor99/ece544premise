@@ -18,7 +18,7 @@ def Validate(num_datapoints):
 
 	err_count = 0
 	count = 0
-	for datapoint in validation_dataset():
+	for datapoint in test_dataset():
 		conjecture = datapoint.conjecture
 		statement = datapoint.statement
 		label = datapoint.label
@@ -37,8 +37,8 @@ def Validate(num_datapoints):
 
 		count += 1
 
-		if count % 100 == 0:
-			print("Count: ",count)
+#		if count % 100 == 0:
+#			print("Count: ",count)
 
 #		if count == num_datapoints:
 #			break
@@ -73,7 +73,7 @@ args = parser.parse_args()
 print(args)
 
 
-MODEL_DIR = os.path.join("..", "models4")
+MODEL_DIR = os.path.join("..", "models")
 input("Is the saving directory okay, and are you loading the model if necessary?")
 
 cuda_available = torch.cuda.is_available()
