@@ -1,50 +1,25 @@
-import numpy as np
-import torch
+"""
+Declare the neural network models LinearMap (1909 -> 256), FI / FO / FL ... / FR, max-pool, classifier, FormulaNet
+"""
 
+
+import numpy as np
+
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 from treelet import treelet_funct
-
 from dataset import train_dataset, get_token_dict_from_file
 import json
 
-# unique_tokens_file = "unique_tokens.json"
-# def graph_to_index_offline():
-#     """ Assign node names such as Var or VarFunc to unique one_hot vectors (where 1 means [0, 1, 0, ..., 0]).
-#     This should be done offline and saved as a dictionary format (json.
-    
-#     @ Output (.json): Dictionary, with {Node name such as "var", "VarFunc": unique one_hot vector}
-#     """
-#     count = 0 # Number of unique vars found.
-#     NUM_TOKENS = 1909
-#     node_to_index = {}
-
-#     for datapoint in train_dataset():
-#         conjecture = datapoint.conjecture
-#         statement = datapoint.statement
-#         for _, node in conjecture.nodes.items():
-#             token = node.token
-#             if token not in node_to_index:
-#                 node_to_index[token] = count
-#                 count += 1
-#                 print("Number of tokens found: "+str(count))
-#             if count == NUM_TOKENS:
-#                 print("All Unique Tokens Found!")
-#                 dumped = json.dumps(node_to_index)
-#                 with open(unique_tokens_file, "w") as f:
-#                     f.write(dumped)
-#                 return
-
 
 class LinearMap(nn.Module):
-    '''
-    Map the one-hot vector to the x's corresponding to inputs of each neural network.
-    '''
+    """
+    Map the one-hot vector to the dense vectors used as inputs to FI, ... FR neural networks.
+    """
     def __init__(self, INPUT_DIM = 1909):
         super(LinearMap, self).__init__()
-        # INPUT_DIM = 1909
         HL1 = 256
         self.fc1 = nn.Linear(INPUT_DIM, HL1)
         self.bn1 = nn.BatchNorm1d(HL1)
@@ -99,6 +74,8 @@ class FIClass(nn.Module):
 
 
 class FHClass(nn.Module):
+    """ Nueral Network Architecture for Treelet Functions FL, FH, FR
+    """
     def __init__(self):
         super(FHClass, self).__init__()
         INPUT_DIM = 256 * 3
@@ -109,6 +86,11 @@ class FHClass(nn.Module):
         self.bn2 = nn.BatchNorm1d(HL2)
 
     def forward(self, x_batch):
+        """
+        @ (Forward) Args:
+            x_batch (2D Tensor)
+                Batches of (xv, xu, xw), (xu, xv, xw), or (xw, xu, xv) depending on which purpose it is serving for.
+        """
         # Order in xv, xu, xw
         x_batch = F.relu(self.bn1(self.fc1(x_batch)))
         x_batch = F.relu(self.bn2(self.fc2(x_batch)))
@@ -118,6 +100,9 @@ class FHClass(nn.Module):
 
 
 class CondClassifier(nn.Module):
+    """
+    Architecutre used for the Conditional Classifier, i.e. network taking max-pooled (conjecture, statement) pair as input.
+    """
     def __init__(self):
         super(CondClassifier, self).__init__()
         INPUT_DIM = 256 * 2
@@ -136,34 +121,18 @@ class CondClassifier(nn.Module):
         return x
 
 
-class max_pool_dense_graph(nn.Module):
-    def __init__(self):
-        super(max_pool_dense_graph, self).__init__()
-        INPUT_DIM = 256 * 2
-        self.pool = nn.MaxPool1d(2)
-
-    def forward(self, G_dense):
-        # print(G_dense.shape)
-        x1 = G_dense[0]
-        x1.unsqueeze_(0)
-        for x2 in G_dense:
-            x2.unsqueeze_(0)
-            x = torch.stack([x1, x2], dim = 2)
-
-            x1 = self.pool(x)
-            x1.squeeze_(2)
-        x1.squeeze_(0)
-        return x1
-
-
 class max_pool_dense_graph_var_inputs():
     def __init__(self):
         pass
 
     def __call__(self, G_dense):   
-        # if G_dense.shape[0] == 36:
-        #     assert True is False
-        # print(1)
+        """
+        @ Args:
+            G_dense (2D Tensor): 0-axis corresponds to indices of nodes in a single graph.
+
+        @ Returns (1D Tensor, length 256):
+            256-dim vector which is the graph max-pooled over all nodes.
+        """
         maxed, _ = torch.max(G_dense, dim = 0)
         return maxed
 
@@ -186,7 +155,6 @@ class FormulaNet(nn.Module):
         # self.FH = FHClass()
         self.Classifier = CondClassifier()
 
-        # self.max_pool_dense_graph = max_pool_dense_graph()
         self.max_pool_dense_graph = max_pool_dense_graph_var_inputs()
 
         self.num_steps = num_steps
@@ -197,22 +165,23 @@ class FormulaNet(nn.Module):
     def fullPass(self, dense_nodes, Gs):
         """
         @ Args:
-            dense_nodes (3D Array): 0-axis is the inter-graph batching index
-                dense_nodes[batch_index][i] is the 256 dimensional dense representation of the ith node, 
-                where i is the node's unique id in <Graph> object
-            G (Array of <Graph> object): Graph object, necessary to iterate over edges and trelets
+            dense_nodes (2D Tensor): shape = (sum_i length(Gs[i].nodes), 256)
+                Batch output of LinearMap
+
+            Gs (Array of <Graph> objects): 
+                This is necessary because the relationship between nodes in Gs are used to input into FI, FO, FL, FH, FR
 
         @ Vars:
-            in_batch (list): Whatever will be fed into FI, FO, ... FR
+            in_batch (list): Inter-intra graph batch of dense_nodes to be fed into FI, i.e. (xu, xv) forall xu, xv
+                out_batch, head_batch, ... , right_batch are all inputs respectively to FO, .., FR, e.g. out_batch = (xv, xu) forall xv, xu
             in_indices (dict): indices of in_batch corresponding to each (xu, xv) pair, forall xu
-            dv (Tensor): dv[xv] for each xv
-            ev (Tensor): ev[xv] for each xv
-            <Neural Function>_indices (dict): {xv: [index of in_batch]} to be used to for summands in update equation (indices of in_sum).
-            new_<Neural Function>_sum (Tensor): in_sum, out_sum, etc. collapsed such that new_sum[xv] = sum_{xu in parent(xv)} F_I (xu, xv)
-                shape: (num_nodes, 256)
+                e.g. 
+                    in_batch = [[0, 1], [0, 2], [1, 2]] => in_indices[0] = [1,2], in_indices[1] = [2]
+            dv (1D Tensor): dv[xv] = in_degree(xv) + out_degree(xv)
+            ev (1D Tensor): ev[xv] = number of treelets in which node xv is included.
 
         @ Return:
-            new_nodes (Same shape as Mdense_nodes>): One-step update of <dense_nodes>.
+            new_nodes (2D Tensor, shape shape as dense_nodes>): One-step update of <dense_nodes> (output of equation 1 or 2)
         """
         # dv is determined by the number of summands for FI + summands of FO
         if self.cuda_available:
@@ -283,7 +252,6 @@ class FormulaNet(nn.Module):
                     dv[xv_id_offset] += 0
 
 
-            start_index += len(G.nodes)
 
                 # # ----------------------- Iterate over treelets ----------------------- #
                 # # Left Treelet: (xv, xu, xw)
@@ -328,7 +296,7 @@ class FormulaNet(nn.Module):
                 #     right_batch.append(torch.cat([xu_dense, xw_dense, xv_dense]))
                 #     ev[xv_id_offset] += 1
 
-            # start_index += len(G.nodes)
+            start_index += len(G.nodes)
 
 
         # Pass in_batch into FI
@@ -388,14 +356,7 @@ class FormulaNet(nn.Module):
 
 
 
-# ----------------------------------------------------------------------------- #
-# ----------------------------------------------------------------------------- #
-# Does assigning to in_out_sum and treelet_sum maintain the computation graph?
-# I'm assuming it does, since the elements in in_out_sum and treelet_sum are all Tensor objects.
-# ----------------------------------------------------------------------------- #
-# ----------------------------------------------------------------------------- #
-        # Compute in_out_sum and treelet_sum to input into FP
-
+        # Compute in_out_sum and treelet_sum to feed into FP
         if self.cuda_available:
             in_out_sum = torch.zeros(dense_nodes.shape).cuda() 
             # treelet_sum = torch.empty(dense_nodes.shape).cuda()
@@ -404,6 +365,7 @@ class FormulaNet(nn.Module):
             # treelet_sum = torch.empty(dense_nodes.shape)
 
 
+        # Gather inputs to pass into FP
         for xv_id_offset in range(len(dense_nodes)):
             if dv[xv_id_offset] > 0:
                 new_in_sum = torch.sum(in_sum[in_indices[xv_id_offset], :], dim = 0)
@@ -451,10 +413,22 @@ class FormulaNet(nn.Module):
         return one_hot_graph
 
     def forward(self, conjecture_state_graphs):
-        """
+        """ 
+        A forward pass of FormulaNet (-Basic).
+        
+        1. Convert (conjecture, statement) pairs into one-hot representations.
+        2. Apply dense_map to map the one-hot nodes (1908 dim) into dense_nodes (256 dim)
+        3. Apply fullPass <num_steps> amount of iterations.
+        4. max-pool the output of (3)
+        5. Pass the max-pooled output of (conjecture, statement) pairs into a classifier.
+        6. Return the label scores (NOT PROBABILITIES)
+
         @ Args:
-            conjecture_graph (arr-like of Graph Objects): Inter-graph Batch of Conjectures
-            statement_graph (same)
+            conjecture_state_graphs (2D array-like Graph objects, shape = (intra_graph_batch_size, 2)):
+                conjecture_state_graphs[i] = conjecture_graph[i], statement_graph[i]
+
+        @ Return:
+            Label Scores for the conjecture-statement batch inputs
         """
         inter_graph_conj_state_node_batch = []
         conj_state_graphs = []

@@ -8,13 +8,12 @@ from dataset import validation_dataset, get_token_dict_from_file, test_dataset
 import os
 
 
-# os.makedirs('models', True) # Directory to save / load models
-def Validate(num_datapoints):
+def Test(num_datapoints):
 	tokens_to_index = get_token_dict_from_file()
 
 	err_count = 0
 	count = 0
-	# for datapoint in validation_dataset():
+
 	for datapoint in test_dataset():
 		conjecture = datapoint.conjecture
 		statement = datapoint.statement
@@ -52,19 +51,14 @@ F = FormulaNet(num_steps, cuda_available)
 
 # Load Model
 # MODEL_DIR = os.path.join("..", "models")
-MODEL_DIR = os.path.join("..", "models2")
+MODEL_DIR = os.path.join("..", "models4")
 file_path = os.path.join(MODEL_DIR, 'last.pth.tar')
 utils.load_checkpoint(F, file_path, cuda_available)
-# model_file = os.path.join(MODEL_DIR, "model.pt")
-
-
-# if cuda_available:
-# 	F.cuda()
-
-# F.load_state_dict(torch.load(model_file, map_location = "cpu"))
-F.eval()
 
 print("Model Loaded!")
-err_fract = Validate(5000)
+
+# Evaluate
+F.eval()
+err_fract = Test(5000)
 
 print("Validation Error: ", err_fract)
