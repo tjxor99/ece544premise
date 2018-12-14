@@ -359,10 +359,10 @@ class FormulaNet(nn.Module):
         # Compute in_out_sum and treelet_sum to feed into FP
         if self.cuda_available:
             in_out_sum = torch.zeros(dense_nodes.shape).cuda() 
-            # treelet_sum = torch.empty(dense_nodes.shape).cuda()
+            # treelet_sum = torch.zeros(dense_nodes.shape).cuda()
         else:
             in_out_sum = torch.zeros(dense_nodes.shape)
-            # treelet_sum = torch.empty(dense_nodes.shape)
+            # treelet_sum = torch.zeros(dense_nodes.shape)
 
 
         # Gather inputs to pass into FP
@@ -372,18 +372,11 @@ class FormulaNet(nn.Module):
                 new_out_sum = torch.sum(out_sum[out_indices[xv_id_offset], :], dim = 0)
                 in_out_sum[xv_id_offset] = (new_in_sum + new_out_sum) / dv[xv_id_offset]
 
-            # if ev[xv_id_offset] == 0:
-            #     if self.cuda_available:
-            #         treelet_sum[xv_id_offset] = torch.zeros(256).cuda()
-            #     else:
-            #         treelet_sum[xv_id_offset] = torch.zeros(256)
-            # else:
+            # if ev[xv_id_offset] > 0:
             #     new_left_sum = torch.sum(left_sum[left_indices[xv_id_offset], :], dim = 0)
             #     new_head_sum = torch.sum(head_sum[head_indices[xv_id_offset], :], dim = 0)
             #     new_right_sum = torch.sum(right_sum[right_indices[xv_id_offset], :], dim = 0)
-            #     treelet_sum[xv_id_offset] = (new_left_sum + new_head_sum + new_right_sum) / ev[xv_id_offset]
-
-            # start_index += len(G.nodes)
+            #     treelet_sum[xv_id_offset] = torch.zeros(256).cuda()
 
         # Add and then send to FP to update all the nodes!
         # new_nodes = self.FP(dense_nodes + in_out_sum + treelet_sum)
@@ -401,15 +394,13 @@ class FormulaNet(nn.Module):
         else:
             one_hot_graph = torch.zeros((len(G.nodes), NUM_TOKENS))
 
-        index = 0
-        for _, node in G.nodes.items():
-            token = node.token
+        for node_id, node_obj in G.nodes.items():
+            token = node_obj.token
             if token not in self.token_to_index:
                 token = "UNKNOWN"
             token_index = self.token_to_index[token]
 
-            one_hot_graph[index, token_index] = 1
-            index += 1
+            one_hot_graph[node_id, token_index] = 1
         return one_hot_graph
 
     def forward(self, conjecture_state_graphs):
