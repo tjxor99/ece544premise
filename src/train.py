@@ -76,7 +76,7 @@ args = parser.parse_args()
 print(args)
 
 
-MODEL_DIR = os.path.join("..", "models2")
+MODEL_DIR = os.path.join("..", "models4")
 input("Is the saving directory okay, and are you loading the model if necessary?")
 
 cuda_available = torch.cuda.is_available()

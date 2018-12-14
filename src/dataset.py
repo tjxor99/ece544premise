@@ -3,6 +3,8 @@ import sys
 import random
 import pickle
 from holstep import *
+import numpy as np
+
 # data_directory = os.path.join("../../../ece544premise/src", "data")
 # data_directory = "/home/joseph/shared_data"
 # data_directory = "/home/joseph/formulanet/ece544premise/data"
