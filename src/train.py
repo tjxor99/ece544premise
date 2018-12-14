@@ -77,8 +77,8 @@ print(args)
 
 input("Is the saving directory okay, and are you loading the model if necessary?")
 
-MODEL_DIR = os.path.join("..", "models")
-# MODEL_DIR = os.path.join("..", "models2")
+#MODEL_DIR = os.path.join("..", "models")
+MODEL_DIR = os.path.join("..", "models4")
 
 cuda_available = torch.cuda.is_available()
 
@@ -130,10 +130,6 @@ for epoch in range(args.start_epoch, args.epochs):
 		conjecture_graph = datapoint.conjecture
 		statement_graph = datapoint.statement
 		label = label_to_one_hot(datapoint.label)
-
-
-		# print("Conj Size: ", len(conjecture_graph.nodes))
-		# print("Statement Size: ", len(statement_graph.nodes))
 
 		conjecture_state_batch.append([conjecture_graph, statement_graph])
 		label_batch.append(label)

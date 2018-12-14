@@ -3,8 +3,7 @@ import sys
 import random
 import pickle
 from holstep import *
-
-# data_directory = os.path.join("..", "data")
+# data_directory = os.path.join("../../../ece544premise/src", "data")
 # data_directory = "/home/joseph/shared_data"
 # data_directory = "/home/joseph/formulanet/ece544premise/data"
 data_directory = "/home/seotaek/ece544premise/data"
@@ -13,7 +12,7 @@ data_directory = "/home/seotaek/ece544premise/data"
 # # data_directory = "/home/joseph/shared_data"
 # data_directory = "/home/joseph/formulanet/ece544premise/data"
 # # formulanet/ece544premise/data"
->>>>>>> 215caadc742bc700ff0b9cc2a520faa5af2542d7
+
 test_directory = os.path.join(data_directory, "test")
 train_directory = os.path.join(data_directory, "train")
 validation_directory = os.path.join(data_directory, "validation")
@@ -171,8 +170,12 @@ def shuffle_dataset(dataset_directory, num_files):
 
 def get_dataset_from_directory(dataset_directory, num_files):
     datapoint_num = 0
-    current_file_num = 0
-    while current_file_num < num_files:
+    file_nums = np.arange(num_files)
+    np.random.shuffle(file_nums) # Shuffles in-place
+
+    # current_file_num = 0
+    # while current_file_num < num_files:
+    for current_file_num in file_nums:
         with open(os.path.join(dataset_directory, str(current_file_num)), 'r') as current_file:
             while True:
                 line1 = current_file.readline()
