@@ -135,10 +135,6 @@ class CondClassifier(nn.Module):
 
         return x
 
-    def predict(self, x_conj, x_state): # Only used for testing.
-        scores = self.forward(x_conj, x_state)
-        return np.argmax(scores)
-
 
 class max_pool_dense_graph(nn.Module):
     def __init__(self):
@@ -451,6 +447,7 @@ class FormulaNet(nn.Module):
             token_index = self.token_to_index[token]
 
             one_hot_graph[index, token_index] = 1
+            index += 1
         return one_hot_graph
 
     def forward(self, conjecture_state_graphs):
@@ -463,7 +460,7 @@ class FormulaNet(nn.Module):
         conj_state_graphs = []
 
         start_index = 0
-        conj_indices = {} # conj_index[i] = [first node in conjecture i, last node in conjecture i]
+        conj_indices = {} # conj_index[i] = [first node id in conjecture i, last node id in conjecture i]
         state_indices = {} # similar
         for i in range(len(conjecture_state_graphs)): # Iterate over inter-graph-batch.
             conjecture_graph = conjecture_state_graphs[i][0]
