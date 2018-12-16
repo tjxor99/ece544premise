@@ -4,9 +4,8 @@ import torch.nn as nn
 
 import numpy as np
 from model import FormulaNet
-from dataset import validation_dataset, get_token_dict_from_file, test_dataset
-import os
 
+import os
 
 def Test(num_datapoints):
 	tokens_to_index = get_token_dict_from_file()
@@ -36,10 +35,7 @@ def Test(num_datapoints):
 		if count % 100 == 0:
 			print("Count: ",count)
 
-#		if count == num_datapoints:
-#			break
-
-	print("Fraction of Incorrect Validations: ", err_count / count)
+	print("Fraction of Incorrect Test Points: ", err_count / count)
 
 	return err_count / count
 
@@ -60,4 +56,4 @@ print("Model Loaded!")
 F.eval()
 err_fract = Test(5000)
 
-print("Validation Error: ", err_fract)
+print("Test Error: ", err_fract)

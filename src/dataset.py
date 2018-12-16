@@ -5,15 +5,9 @@ import pickle
 from holstep import *
 import numpy as np
 
-# data_directory = os.path.join("../../../ece544premise/src", "data")
-# data_directory = "/home/joseph/shared_data"
-# data_directory = "/home/joseph/formulanet/ece544premise/data"
-data_directory = "/home/seotaek/ece544premise/data"
-# formulanet/ece544premise/data"
+import argparse
 
-# # data_directory = "/home/joseph/shared_data"
-# data_directory = "/home/joseph/formulanet/ece544premise/data"
-# # formulanet/ece544premise/data"
+data_directory = os.path.join("..", "data")
 
 test_directory = os.path.join(data_directory, "test")
 train_directory = os.path.join(data_directory, "train")
