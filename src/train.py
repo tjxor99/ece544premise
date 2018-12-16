@@ -7,10 +7,27 @@ import torch.nn as nn
 from torch.autograd import Variable
 
 from model import FormulaNet
-# from model2 import FormulaNet
 import utils
 
 from dataset import train_dataset, test_dataset, validation_dataset, get_token_dict_from_file
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--batch_size', type = int, default = 32, help = 'Batch Size')
+parser.add_argument('--epochs', type = int, default = 5, help = 'Number of training episodes')
+parser.add_argument('--num_steps', type = int, default = 0, help = 'Number of update steps for equation 1 or 2')
+parser.add_argument('--lr', type = float, default = 1e-3, help = 'Initial learning rate for RMSProp')
+parser.add_argument('--weight_decay', type = float, default = 1e-4, help = "Weight decay parameter for RMSProp")
+parser.add_argument('--lr_decay', type = float, default = 3., help = 'Multiplicative Factor by which to decay learning rate by after each epoch, > 1')
+parser.add_argument('--start_epoch', type = int, default = 0, help = 'Epoch to resume with')
+parser.add_argument('--start_batch', type = int, default = 0, help = 'Batch Number to resume with')
+parser.add_argument('--load', type = bool, default = False, help = 'True to load model')
+parser.add_argument('--model_path', type = bool, default = None, help = '.pth.tar file to save the model and optimizer. Default is ../models/last.pth.tar')
+
+args = parser.parse_args()
+print(args)
+
+
 
 def Validate(num_datapoints):
 	# To validate the current model after each epoch.
@@ -18,7 +35,7 @@ def Validate(num_datapoints):
 
 	err_count = 0
 	count = 0
-	for datapoint in test_dataset():
+	for datapoint in validation_dataset():
 		conjecture = datapoint.conjecture
 		statement = datapoint.statement
 		label = datapoint.label
@@ -37,11 +54,8 @@ def Validate(num_datapoints):
 
 		count += 1
 
-#		if count % 100 == 0:
-#			print("Count: ",count)
-
-#		if count == num_datapoints:
-#			break
+		if count % 100 == 0:
+			print("Count: ",count)
 
 	print("Fraction of Incorrect Validations: ", err_count / count)
 
@@ -56,25 +70,9 @@ def label_to_one_hot(y):
 
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--batch_size', type = int, default = 32, help = 'Batch Size')
-parser.add_argument('--epochs', type = int, default = 5, help = 'Number of training episodes')
-parser.add_argument('--num_steps', type = int, default = 0, help = 'Number of update steps for equation 1 or 2')
-parser.add_argument('--lr', type = float, default = 1e-3, help = 'Initial learning rate for RMSProp')
-parser.add_argument('--weight_decay', type = float, default = 1e-4, help = "Weight decay parameter for RMSProp")
-parser.add_argument('--lr_decay', type = float, default = 3., help = 'Multiplicative Factor by which to decay learning rate by after each epoch, > 1')
-parser.add_argument('--start_epoch', type = int, default = 0, help = 'Epoch to resume with')
-parser.add_argument('--start_batch', type = int, default = 0, help = 'Batch Number to resume with')
-parser.add_argument('--load', type = bool, default = False, help = 'True to load model')
-parser.add_argument('--model_path', type = bool, default = None, help = '.pth.tar file to save the model and optimizer. Default is ../models/last.pth.tar')
-
-
-args = parser.parse_args()
-print(args)
-
 
 MODEL_DIR = os.path.join("..", "models")
-input("Is the saving directory okay, and are you loading the model if necessary?")
+# input("Is the saving directory okay, and are you loading the model if necessary?")
 
 cuda_available = torch.cuda.is_available()
 
@@ -174,7 +172,7 @@ for epoch in range(args.start_epoch, args.epochs):
 				print("Train Loss", curr_loss)
 		
 			if (batch_number > 0) and (batch_number % 1000 == 0):
-				# Save model, optimizer, and epcoh # every 1000 batches.
+				# Save model, optimizer, and epoch # every 1000 batches.
 				state_dict = {'epoch:': epoch + 1, 
 							  'state_dict': F.state_dict(), 
 							  'optim_dict': opt.state_dict()}

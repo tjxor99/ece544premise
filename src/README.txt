@@ -50,12 +50,17 @@ File Descriptions: (Notice utils.py is copied from github, which is used to stor
 INSTRUCTIONS ON RUNNING THE CODE
 ===========================================================
 
+How to Pre-Process Dataset (required before training model):
+	python3 dataset.py <path_to_holstep_dataset>
+
 How to Train a New Model:
-	run python3 train.py --num_steps <number of update steps>
+	python3 train.py --num_steps <number of update steps>
+	It is assumed that the processed data is in ../data
 
 Training a Saved Model:
-	run python3 train.py --load True --epochs <Final epoch number> --start_epoch <Last saved epoch number from 0 to <Final epoch number>> --start_batch <Last saved batch number within the last --start_epoch> --model_path <Absolute path to model file (.pth.tar file)
+	python3 train.py --load True --epochs <Final epoch number> --start_epoch <Last saved epoch number from 0 to <Final epoch number>> --start_batch <Last saved batch number within the last --start_epoch> --model_path <Absolute path to model file (.pth.tar file)
 
 How to Test given a saved model:
-	run load.py
-	This assumes that the model is saved in ../model/last.pth.tar file. The user can easily fix this variable within load.py.
+	python3 load.py
+	This assumes that the model is saved in ../models/last.pth.tar file which is the default save path for train.py
+	Supports CPU and GPU regardless of where the model was trained on.
