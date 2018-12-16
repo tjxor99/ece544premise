@@ -50,7 +50,7 @@ num_steps = int(input("Number of Update Iterations:\n"))
 F = FormulaNet(num_steps, cuda_available)
 
 # Load Model
-MODEL_DIR = os.path.join("..", "models")
+MODEL_DIR = os.path.join("..", "models_numstep1_batch32")
 file_path = os.path.join(MODEL_DIR, 'last.pth.tar')
 utils.load_checkpoint(F, file_path, cuda_available)
 

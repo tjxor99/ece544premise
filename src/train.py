@@ -73,7 +73,7 @@ args = parser.parse_args()
 print(args)
 
 
-MODEL_DIR = os.path.join("..", "models")
+MODEL_DIR = os.path.join("..", "models_numstep1_batch32")
 input("Is the saving directory okay, and are you loading the model if necessary?")
 
 cuda_available = torch.cuda.is_available()
