@@ -4,7 +4,7 @@ import torch.nn as nn
 
 import numpy as np
 from model import FormulaNet
-
+from dataset import test_dataset, get_token_dict_from_file
 import os
 
 def Test(num_datapoints):
